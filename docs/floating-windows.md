@@ -4,6 +4,14 @@ The drag bar below a screen or floating window can have a larger laser target. I
 
 **Show drag zone** displays the draggable rectangle with a translucent fill and thin outline whenever its bar shows. **Keep drag zones visible** keeps those bars and previews visible while their panels show; hidden, minimized or paused panels still hide them. Fill and outline each have a color picker and opacity slider. Outline thickness is adjustable from 0 (none) to 8 pixels at the original pill's resolution. These preferences persist too: `GRAB_BAR_PREVIEW`, `GRAB_BAR_PREVIEW_ALWAYS`, `GRAB_BAR_PREVIEW_COLOR`, `GRAB_BAR_PREVIEW_OPACITY`, `GRAB_BAR_OUTLINE_COLOR`, `GRAB_BAR_OUTLINE_OPACITY`, `GRAB_BAR_OUTLINE_WIDTH`. Opacity also follows the bar's normal fade and idle dimming.
 
+The settings UI, captured directly without VR projection:
+
+![Drag-zone padding, preview and styling controls](images/drag-zone-settings.png)
+
+The draggable zone in VR (cropped headset capture, with the wearer's approval):
+
+![A translucent orange drag zone and thin outline around the visible bar](images/drag-zone-vr.png)
+
 Any desktop app can float in VR in a panel of its own, like SteamVR's floating windows, while it stays part of the Frametop desktop. Drag and drop, the clipboard, and focus keep working between floating windows and the screens.
 
 - **Float a window** with "Float in VR" in its window menu (Alt+F3), the float button left of Close in its title bar, or the float key (Meta+Shift+F by default). Start an app floating with "Launch as Standalone" in its right-click menu in the Application Launcher or the taskbar, with `ft-float launch` or `ft-float run`, or from a profile ([profiles.md](profiles.md)).

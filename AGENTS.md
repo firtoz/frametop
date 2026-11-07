@@ -1,5 +1,13 @@
 # Working on Frametop
 
+## firtoz fork workflow (fork-only)
+
+- `main` is the personal integration branch for `firtoz/frametop`, not an upstream PR branch. `origin` is the fork and default push destination; `upstream` is `Frametop/frametop`, with pushes disabled. `upstream-main` is the clean tracking branch.
+- Document every custom feature or fix in `docs/firtoz-customizations.md`, linked from the README: describe the behavior, settings, validation, and its upstream PR. Keep that log current as contributions are reviewed or merged.
+- Create contribution branches from clean `upstream-main`, copying only the intended feature. Do not include this fork-only section, the personal README notice, or the customization log in upstream PRs.
+- Never push personal `main` to upstream. Ask before rebasing published branches or force-pushing; use `--force-with-lease` only after approval. Do not discard unfamiliar changes while synchronizing.
+- Screenshots can expose desktop contents or the room. Publish only captures the wearer has reviewed and approved; raw captures stay in ignored local artifacts.
+
 Rules for people and coding agents changing this repo. The README covers what Frametop is and how to install it; `docs/reference.md` covers each component, and `docs/design.md` records how SteamVR on the Frame behaves and why things are built the way they are. Read its notes on SteamVR before changing how the screens, the pointer, or the input relay talk to SteamVR.
 
 ## Charts and models

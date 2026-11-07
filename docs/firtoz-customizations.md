@@ -1,0 +1,59 @@
+# firtoz's Frametop customizations
+
+This is the change log for the personal integration branch, `firtoz/frametop:main`.
+It lists the extra behavior maintained here, not Frametop's complete upstream feature set.
+Follow each PR link for its current review/merge status; a submitted PR is not necessarily in upstream yet.
+
+| Customization | Upstream contribution |
+| --- | --- |
+| Keyboard focus follows controller selection of native windows | [Frametop/frametop #87](https://github.com/Frametop/frametop/pull/87) |
+| Configurable drag-zone padding, preview and styling | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
+
+## Controller-selected native windows get keyboard focus
+
+After typing in a Frametop window, selecting a native SteamOS window with a controller laser now hands physical-keyboard input back to that window. Previously, a separate 3D-mouse click was needed. The ProtoArc keyboard/touchpad should use **Keyboard + 3D pointer** (`combo`) mode to avoid duplicate typing.
+
+The fix reuses the dashboard focus-stack reader, without intercepting controller buttons. It was manually tested by switching typing between a Frametop text field and native Konsole with the controller alone. See [PR #87](https://github.com/Frametop/frametop/pull/87) for implementation and validation details.
+
+## Configurable drag zones
+
+**Frametop Display Settings → Visibility & pins → Window controls** provides:
+
+- Independent horizontal and vertical padding in **centimetres per side**, from 0 to 50 cm; default 2 cm. For example, 2 cm horizontal padding makes the target 4 cm wider than the visible pill.
+- No multiplier mode. The visible pill continues to auto-size, but the added physical padding stays fixed.
+- **Show drag zone**, with a translucent fill and thin outline.
+- **Keep drag zones visible**, while their panels are visible; it does not force other buttons to stay visible or bypass hiding/pausing.
+- Independent fill/outline colors and opacity, plus outline thickness.
+- Live changes, persisted in the configuration file. Targets remain clear of content and neighboring buttons.
+
+See [Floating windows](floating-windows.md) for configuration keys and details.
+
+Validation: manually exercised on the headset; the clean contribution passed a full ARM64 image build, all `just test-c` checks and changed-file Ruff. Relevant Python tests passed (42 in the checkout; 40 in the image, where the two documentation checks skip without Git metadata). See [PR #92](https://github.com/Frametop/frametop/pull/92) for details and broader-suite limitations.
+
+### Screenshots
+
+Settings UI captured directly, without VR projection, using the current preferences:
+
+![Drag-zone padding and preview controls](images/drag-zone-settings.png)
+
+Actual VR drag-zone preview, cropped from the headset view:
+
+![Orange drag zone and outlined hit target surrounding the visible bar](images/drag-zone-vr.png)
+
+Only these two wearer-reviewed crops are published. The uncropped capture stays in ignored local artifacts; screenshot review is required before publishing new captures, which may include private windows or room imagery.
+
+## Branch workflow
+
+- **`origin`** points to `firtoz/frametop`; it is the default push destination.
+- **`main`** integrates the personal customizations and this log. Never submit it wholesale to upstream.
+- **`upstream`** points to `Frametop/frametop`; its push URL is deliberately disabled.
+- **`upstream-main`** tracks upstream's clean `main` and has a matching branch on the fork. Update it by fast-forwarding, not by adding personal commits.
+- **PR branches** start from the clean tracking branch and contain only the relevant feature/fix. The personal README notice, this log and fork-specific agent instructions stay out of upstream PRs.
+
+Periodically fetch upstream and update the tracking branch, then integrate those changes into personal `main`. Rebasing an already published `main` rewrites history and needs explicit approval and a guarded `--force-with-lease` push; merging is the non-rewriting alternative. After a PR merges, check whether its local commits can be dropped during the next rebase.
+
+The generic installer/updater in the upstream README targets upstream. Do not use it as an update mechanism for this customized branch without checking what it will replace.
+
+## Maintaining this log
+
+For every new customization, add or update its entry, behavior summary, configuration location, upstream PR link and validation notes. Link approved screenshots where useful. Keep entries when their PR merges, marking them as integrated rather than silently losing the history. Keep fork-only documentation separate from contribution branches.

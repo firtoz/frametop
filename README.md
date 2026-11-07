@@ -1,5 +1,7 @@
 # Frametop
 
+> **firtoz's personal fork:** See [Customizations and upstream PRs](docs/firtoz-customizations.md) for what this fork adds, screenshots, and how its branches are maintained. The installation and update commands below are upstream's, not a way to install or preserve this fork's custom changes.
+
 Frametop is a desktop for the Steam Frame that runs on the headset itself, with no PC. Put several monitors around you, pull app windows out to float on their own, and point with a mouse, or with your eyes.
 
 - **Screens that are real monitors.** Each KDE Plasma screen has its own resolution and shape: an ultrawide in front, portrait screens beside it. Move, resize, curve, and roll them, or pin one to your wrist or your head. They come back to your layout when the desktop starts.
