@@ -2,6 +2,8 @@
 
 ## Resize corners
 
+The optional **Native-like (gray → white)** style approximates SteamVR's feedback: gray while approaching, almost white when actually hovered/held, with 12% longer arms, a 20% thicker stroke and 3 mm extra clearance. It does not alter the hit area or overwrite custom colors; switch back to Sharp outline to use those colors. **Corner roundness** applies to both outline styles, from 0% (square bend) to 100% (fully rounded); saved as `RESIZE_CORNER_ROUNDNESS` (default 100). Native-like is saved as `RESIZE_CORNER_STYLE=native`. This is Frametop's own rendering, not SteamVR's native control.
+
 Frametop's resize indicator is a crisp, rounded outline outside the panel, rather than a diffuse white halo. It follows whichever of the four corners a laser or hand approaches; only the active corner is indicated. SteamVR's native windows keep their own controls.
 
 In **Display Settings → Visibility & pins → Resize corners**, choose **Sharp outline** (default) or the original **Soft glow**, color and opacity. The sharp outline also has arm length (1–10 cm, default 4 cm), thickness (0.5–6 mm, default 2 mm), and a clear gap from the panel (0–10 cm, default **2 cm**). Appearance dimensions do not resize the interaction target.

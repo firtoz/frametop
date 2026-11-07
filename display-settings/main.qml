@@ -1197,12 +1197,13 @@ Kirigami.ApplicationWindow {
                     Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Resize corners" }
                     Controls.ComboBox {
                         Kirigami.FormData.label: "Indicator style:"
-                        model: ["Sharp outline", "Soft glow (original)"]
-                        currentIndex: backend.resizeCornerStyle === "glow" ? 1 : 0
-                        onActivated: backend.setResizeCornerStyle(currentIndex === 1 ? "glow" : "sharp")
+                        model: ["Sharp outline", "Soft glow (original)", "Native-like (gray → white)"]
+                        currentIndex: backend.resizeCornerStyle === "native" ? 2 : backend.resizeCornerStyle === "glow" ? 1 : 0
+                        onActivated: backend.setResizeCornerStyle(["sharp", "glow", "native"][currentIndex])
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Indicator color:"
+                        enabled: backend.resizeCornerStyle !== "native"
                         Rectangle {
                             color: backend.resizeCornerColor
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 2
@@ -1230,7 +1231,7 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Outline arm length:"
-                        enabled: backend.resizeCornerStyle === "sharp"
+                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerLength
                             from: 1; to: 10; stepSize: 0.1
@@ -1242,7 +1243,7 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Outline thickness:"
-                        enabled: backend.resizeCornerStyle === "sharp"
+                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerWidth
                             from: 0.5; to: 6; stepSize: 0.1
@@ -1254,7 +1255,7 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Gap from window:"
-                        enabled: backend.resizeCornerStyle === "sharp"
+                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerGap
                             from: 0; to: 10; stepSize: 0.1
@@ -1263,6 +1264,18 @@ Kirigami.ApplicationWindow {
                             onMoved: backend.setResizeCornerGap(value)
                         }
                         Controls.Label { text: resizeCornerGap.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Corner roundness:"
+                        enabled: backend.resizeCornerStyle !== "glow"
+                        Controls.Slider {
+                            id: resizeCornerRoundness
+                            from: 0; to: 100; stepSize: 1
+                            value: backend.resizeCornerRoundness
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerRoundness(value)
+                        }
+                        Controls.Label { text: Math.round(resizeCornerRoundness.value) + "%" }
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Laser hover target size:"
@@ -1288,6 +1301,7 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Ready-to-drag color:"
+                        enabled: backend.resizeCornerStyle !== "native"
                         Rectangle {
                             color: backend.resizeCornerHoverColor
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 2
@@ -1308,7 +1322,10 @@ Kirigami.ApplicationWindow {
                               + "The laser target is a square outside the chosen corner; its size is independent of the outline. "
                               + "The approach radius shows a preview, but never shrinks below the target's diagonal. "
                               + "On the actual target, the outline changes color, thickens and becomes fully bright: ready to drag. "
-                              + "Gap and thickness affect the sharp style only. Laser target size also applies to the 3D mouse; "
+                              + "Native-like uses gray then almost-white feedback, with 12% longer arms, 20% thicker lines "
+                              + "and 3 mm extra gap on hover, without overwriting your custom colors. "
+                              + "Roundness runs from a square bend to a full round bend; dimensions affect outline styles only. "
+                              + "Laser target size also applies to the 3D mouse; "
                               + "near-hand reach is unchanged. Native SteamVR window controls are unchanged."
                         wrapMode: Text.Wrap
                         opacity: 0.7

@@ -698,11 +698,11 @@ class Backend(QObject):
     @Property(str, notify=changed)
     def resizeCornerStyle(self):
         value = ft_layout.read_conf().get("RESIZE_CORNER_STYLE", "sharp")
-        return value if value in ("sharp", "glow") else "sharp"
+        return value if value in ("sharp", "glow", "native") else "sharp"
 
     @Slot(str)
     def setResizeCornerStyle(self, style):
-        if style in ("sharp", "glow"):
+        if style in ("sharp", "glow", "native"):
             self._setBar("RESIZE_CORNER_STYLE", style)
 
     @Property(str, notify=changed)
@@ -768,6 +768,14 @@ class Backend(QObject):
     @Slot(float)
     def setResizeCornerReach(self, cm):
         self._setBarNumber("RESIZE_CORNER_REACH", cm, 20, 1, 50)
+
+    @Property(float, notify=changed)
+    def resizeCornerRoundness(self):
+        return self._barNumber("RESIZE_CORNER_ROUNDNESS", 100, 0, 100)
+
+    @Slot(float)
+    def setResizeCornerRoundness(self, percent):
+        self._setBarNumber("RESIZE_CORNER_ROUNDNESS", percent, 100, 0, 100)
 
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows

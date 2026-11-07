@@ -47,5 +47,32 @@ int main() {
         }
         assert(readyArea > idleArea);
     }
-    std::cout << "ok crisp corners: orientations, gap clearance, bounded canvas, AA, distinct thicker hover state\n";
+    style = resizecorner::Style{};
+    for (bool native : {false, true}) for (double roundness : {0.0, 50.0, 100.0}) {
+        style.native = native, style.roundness = roundness;
+        const double size = resizecorner::Canvas(style);
+        const auto idle = resizecorner::Texture(n, size, 1, -1, style);
+        const auto ready = resizecorner::Texture(n, size, 1, -1, style, true);
+        int idleArea = 0, readyArea = 0, idleMaxX = 0, readyMaxX = 0;
+        for (int y = 0; y < n; ++y) for (int x = 0; x < n; ++x) {
+            const auto i = (size_t(y) * n + x) * 4;
+            idleArea += idle[i + 3] > 0, readyArea += ready[i + 3] > 0;
+            if (idle[i + 3]) idleMaxX = std::max(idleMaxX, x);
+            if (ready[i + 3]) readyMaxX = std::max(readyMaxX, x);
+            if (native) {
+                assert(idle[i] == 0xaa && ready[i] == 0xfa);
+                assert(idle[i] == idle[i + 1] && ready[i] == ready[i + 2]);
+            }
+            if (x == 0 || y == 0 || x == n - 1 || y == n - 1) assert(!idle[i + 3] && !ready[i + 3]);
+            if (x < n / 2 && y < n / 2) assert(!idle[i + 3] && !ready[i + 3]);
+        }
+        assert(readyArea > idleArea);
+        if (native) assert(readyMaxX > idleMaxX);
+    }
+    style.native = false;
+    style.roundness = 0;
+    const auto square = resizecorner::Texture(n, resizecorner::Canvas(style), 1, -1, style);
+    style.roundness = 100;
+    assert(square != resizecorner::Texture(n, resizecorner::Canvas(style), 1, -1, style));
+    std::cout << "ok crisp corners: gap, AA, hover, native gray/white growth, roundness and clear canvas\n";
 }

@@ -5569,13 +5569,16 @@ bool ft_vr_init(void) {
     num("GRAB_BAR_PREVIEW_OPACITY", g_barPreview.opacity, 0, 1);
     num("GRAB_BAR_OUTLINE_OPACITY", g_barPreview.outlineOpacity, 0, 1);
     num("GRAB_BAR_OUTLINE_WIDTH", g_barPreview.outlineWidth, 0, 8);
-    g_resizeCorner.sharp = handcut::Setting("RESIZE_CORNER_STYLE", "sharp") != "glow";
+    const auto resizeStyle = handcut::Setting("RESIZE_CORNER_STYLE", "sharp");
+    g_resizeCorner.sharp = resizeStyle != "glow";
+    g_resizeCorner.native = resizeStyle == "native";
     num("RESIZE_CORNER_OPACITY", g_resizeCorner.opacity, 0, 1);
     num("RESIZE_CORNER_LENGTH", g_resizeCorner.lengthCm, 1, 10);
     num("RESIZE_CORNER_WIDTH", g_resizeCorner.widthMm, 0.5, 6);
     num("RESIZE_CORNER_GAP", g_resizeCorner.gapCm, 0, 10);
     num("RESIZE_CORNER_TARGET", g_resizeCorner.targetCm, 1, 50);
     num("RESIZE_CORNER_REACH", g_resizeCorner.reachCm, 1, 50);
+    num("RESIZE_CORNER_ROUNDNESS", g_resizeCorner.roundness, 0, 100);
     for (auto entry : {std::pair{"GRAB_BAR_PREVIEW_COLOR", &g_barPreview.color},
                        std::pair{"GRAB_BAR_OUTLINE_COLOR", &g_barPreview.outlineColor},
                        std::pair{"RESIZE_CORNER_COLOR", &g_resizeCorner.color},
@@ -7122,8 +7125,8 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
             const std::string name = key;
             bool valid = false;
             double value;
-            if (name == "RESIZE_CORNER_STYLE" && (!std::strcmp(word, "sharp") || !std::strcmp(word, "glow")))
-                g_resizeCorner.sharp = !std::strcmp(word, "sharp"), valid = true;
+            if (name == "RESIZE_CORNER_STYLE" && (!std::strcmp(word, "sharp") || !std::strcmp(word, "glow") || !std::strcmp(word, "native")))
+                g_resizeCorner.sharp = std::strcmp(word, "glow") != 0, g_resizeCorner.native = !std::strcmp(word, "native"), valid = true;
             else if (name == "RESIZE_CORNER_COLOR") valid = barhit::Color(word, &g_resizeCorner.color);
             else if (name == "RESIZE_CORNER_HOVER_COLOR") valid = barhit::Color(word, &g_resizeCorner.hoverColor);
             else if (ft_conf_number(word, &value)) {
@@ -7134,6 +7137,7 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
                 else if (name == "RESIZE_CORNER_GAP") setting = &g_resizeCorner.gapCm, hi = 10;
                 else if (name == "RESIZE_CORNER_TARGET") setting = &g_resizeCorner.targetCm, lo = 1, hi = 50;
                 else if (name == "RESIZE_CORNER_REACH") setting = &g_resizeCorner.reachCm, lo = 1, hi = 50;
+                else if (name == "RESIZE_CORNER_ROUNDNESS") setting = &g_resizeCorner.roundness, hi = 100;
                 if (setting && value >= lo && value <= hi) *setting = value, valid = true;
             }
             if (!valid) return (void)std::snprintf(reply, size, "error invalid resize-corner setting");

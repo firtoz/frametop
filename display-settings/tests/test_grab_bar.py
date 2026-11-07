@@ -139,6 +139,7 @@ class GrabBar(unittest.TestCase):
         self.assertEqual(self.b.resizeCornerGap, 2)
         self.assertEqual(self.b.resizeCornerTarget, 12)
         self.assertEqual(self.b.resizeCornerReach, 20)
+        self.assertEqual(self.b.resizeCornerRoundness, 100)
         for prop, setter, key, value in (
             ("resizeCornerStyle", "setResizeCornerStyle", "RESIZE_CORNER_STYLE", "glow"),
             ("resizeCornerColor", "setResizeCornerColor", "RESIZE_CORNER_COLOR", "#abcdef"),
@@ -149,6 +150,8 @@ class GrabBar(unittest.TestCase):
             ("resizeCornerTarget", "setResizeCornerTarget", "RESIZE_CORNER_TARGET", 16.5),
             ("resizeCornerReach", "setResizeCornerReach", "RESIZE_CORNER_REACH", 25.5),
             ("resizeCornerHoverColor", "setResizeCornerHoverColor", "RESIZE_CORNER_HOVER_COLOR", "#00ffff"),
+            ("resizeCornerRoundness", "setResizeCornerRoundness", "RESIZE_CORNER_ROUNDNESS", 50.5),
+            ("resizeCornerStyle", "setResizeCornerStyle", "RESIZE_CORNER_STYLE", "native"),
         ):
             getattr(self.b, setter)(value)
             self.assertEqual(getattr(self.b, prop), value)
@@ -171,6 +174,8 @@ class GrabBar(unittest.TestCase):
             ("setResizeCornerTarget", "resizeCornerTarget", 0, 1),
             ("setResizeCornerReach", "resizeCornerReach", 100, 50),
             ("setResizeCornerTarget", "resizeCornerTarget", float("inf"), 12),
+            ("setResizeCornerRoundness", "resizeCornerRoundness", -1, 0),
+            ("setResizeCornerRoundness", "resizeCornerRoundness", 120, 100),
         ):
             getattr(self.b, setter)(value)
             self.assertEqual(getattr(self.b, prop), want)
