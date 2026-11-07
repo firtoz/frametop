@@ -19,6 +19,11 @@ GRAB_BAR_PREVIEW_OPACITY=0.12    # fill opacity, 0..1 (also follows the bar's fa
 GRAB_BAR_OUTLINE_COLOR='#99ddff' # outline, #RRGGBB
 GRAB_BAR_OUTLINE_OPACITY=0.7     # outline opacity, 0..1
 GRAB_BAR_OUTLINE_WIDTH=1         # outline thickness, 0..8 pixels at the original pill's resolution; 0 hides it
+RESIZE_CORNER_STYLE=sharp       # sharp rounded outline | glow (original); appearance only, all four corners still resize
+RESIZE_CORNER_COLOR='#f6f9ff'    # indicator color, #RRGGBB
+RESIZE_CORNER_OPACITY=0.9        # 0..1; 0 hides feedback, not the resize target
+RESIZE_CORNER_LENGTH=4           # sharp outline arm length, 1..10 cm
+RESIZE_CORNER_WIDTH=2            # sharp outline thickness, 0.5..6 mm; applies live in Display Settings > Visibility & pins
 DASHBOARD_APPS=steamvr # apps from the SteamVR dashboard's Launch a program list: steamvr = SteamVR windows | frametop = Frametop floating windows (SteamVR's when the desktop isn't running, Frametop is paused, or every floating window is in use; applies at once)
 NOTIFY_FORWARD=auto # the desktop's notifications go to the Steam session's notification server (e.g. VR toasts), Plasma's popups off: auto = unless that's SteamOS's steam_notif_daemon | on | off (restart the desktop after a change)
 FIREFOX_TITLEBAR=kwin # Firefox in the desktop: kwin = KWin's title bar, with Frametop's float button | firefox = its own, tabs in the title bar (restart the desktop after a change)

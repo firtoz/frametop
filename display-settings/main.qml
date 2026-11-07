@@ -1194,6 +1194,74 @@ Kirigami.ApplicationWindow {
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 26
                     }
 
+                    Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Resize corners" }
+                    Controls.ComboBox {
+                        Kirigami.FormData.label: "Indicator style:"
+                        model: ["Sharp outline", "Soft glow (original)"]
+                        currentIndex: backend.resizeCornerStyle === "glow" ? 1 : 0
+                        onActivated: backend.setResizeCornerStyle(currentIndex === 1 ? "glow" : "sharp")
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Indicator color:"
+                        Rectangle {
+                            color: backend.resizeCornerColor
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                            Layout.preferredHeight: Kirigami.Units.gridUnit
+                            border.color: Kirigami.Theme.textColor
+                        }
+                        Controls.Button { text: "Choose…"; onClicked: resizeCornerColorDialog.open() }
+                        ColorDialog {
+                            id: resizeCornerColorDialog
+                            title: "Resize corner color"
+                            selectedColor: backend.resizeCornerColor
+                            onAccepted: backend.setResizeCornerColor(selectedColor.toString())
+                        }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Indicator opacity:"
+                        Controls.Slider {
+                            id: resizeCornerOpacity
+                            from: 0; to: 1; stepSize: 0.01
+                            value: backend.resizeCornerOpacity
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerOpacity(value)
+                        }
+                        Controls.Label { text: Math.round(resizeCornerOpacity.value * 100) + "%" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline arm length:"
+                        enabled: backend.resizeCornerStyle === "sharp"
+                        Controls.Slider {
+                            id: resizeCornerLength
+                            from: 1; to: 10; stepSize: 0.1
+                            value: backend.resizeCornerLength
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerLength(value)
+                        }
+                        Controls.Label { text: resizeCornerLength.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline thickness:"
+                        enabled: backend.resizeCornerStyle === "sharp"
+                        Controls.Slider {
+                            id: resizeCornerWidth
+                            from: 0.5; to: 6; stepSize: 0.1
+                            value: backend.resizeCornerWidth
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerWidth(value)
+                        }
+                        Controls.Label { text: resizeCornerWidth.value.toFixed(1) + " mm" }
+                    }
+                    Controls.Label {
+                        text: "A crisp, rounded corner outside the panel, or the original soft glow. "
+                              + "The indicator follows whichever of the four corners you approach. "
+                              + "Appearance does not change the resize hit area. Applies live to Frametop panels, "
+                              + "for lasers and hands; SteamVR's native window controls are unchanged."
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        Layout.maximumWidth: Kirigami.Units.gridUnit * 26
+                    }
+
                     Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Screens shown" }
 
                     // Counts as models, here and in Pinned screens: a new list rebuilds the rows, and

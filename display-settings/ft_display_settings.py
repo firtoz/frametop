@@ -695,6 +695,48 @@ class Backend(QObject):
     def setGrabBarOutlineWidth(self, width):
         self._setBarNumber("GRAB_BAR_OUTLINE_WIDTH", width, 1.0, 0.0, 8.0)
 
+    @Property(str, notify=changed)
+    def resizeCornerStyle(self):
+        value = ft_layout.read_conf().get("RESIZE_CORNER_STYLE", "sharp")
+        return value if value in ("sharp", "glow") else "sharp"
+
+    @Slot(str)
+    def setResizeCornerStyle(self, style):
+        if style in ("sharp", "glow"):
+            self._setBar("RESIZE_CORNER_STYLE", style)
+
+    @Property(str, notify=changed)
+    def resizeCornerColor(self):
+        return self._barColor("RESIZE_CORNER_COLOR", "#f6f9ff")
+
+    @Slot(str)
+    def setResizeCornerColor(self, color):
+        self._setBarColor("RESIZE_CORNER_COLOR", color)
+
+    @Property(float, notify=changed)
+    def resizeCornerOpacity(self):
+        return self._barNumber("RESIZE_CORNER_OPACITY", 0.9, 0, 1)
+
+    @Slot(float)
+    def setResizeCornerOpacity(self, opacity):
+        self._setBarNumber("RESIZE_CORNER_OPACITY", opacity, 0.9, 0, 1)
+
+    @Property(float, notify=changed)
+    def resizeCornerLength(self):
+        return self._barNumber("RESIZE_CORNER_LENGTH", 4, 1, 10)
+
+    @Slot(float)
+    def setResizeCornerLength(self, cm):
+        self._setBarNumber("RESIZE_CORNER_LENGTH", cm, 4, 1, 10)
+
+    @Property(float, notify=changed)
+    def resizeCornerWidth(self):
+        return self._barNumber("RESIZE_CORNER_WIDTH", 2, 0.5, 6)
+
+    @Slot(float)
+    def setResizeCornerWidth(self, mm):
+        self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 2, 0.5, 6)
+
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows
     # walking only: no turning, looking up or down, or crouching.

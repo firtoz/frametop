@@ -130,6 +130,42 @@ class GrabBar(unittest.TestCase):
         engine.deleteLater()
         self.app.processEvents()
 
+    def test_resize_corner_defaults_and_live_settings(self):
+        self.assertEqual(self.b.resizeCornerStyle, "sharp")
+        self.assertEqual(self.b.resizeCornerColor, "#f6f9ff")
+        self.assertEqual(self.b.resizeCornerLength, 4)
+        self.assertEqual(self.b.resizeCornerWidth, 2)
+        self.assertEqual(self.b.resizeCornerOpacity, 0.9)
+        for prop, setter, key, value in (
+            ("resizeCornerStyle", "setResizeCornerStyle", "RESIZE_CORNER_STYLE", "glow"),
+            ("resizeCornerColor", "setResizeCornerColor", "RESIZE_CORNER_COLOR", "#abcdef"),
+            ("resizeCornerLength", "setResizeCornerLength", "RESIZE_CORNER_LENGTH", 5.5),
+            ("resizeCornerWidth", "setResizeCornerWidth", "RESIZE_CORNER_WIDTH", 1.5),
+            ("resizeCornerOpacity", "setResizeCornerOpacity", "RESIZE_CORNER_OPACITY", 0.8),
+        ):
+            getattr(self.b, setter)(value)
+            self.assertEqual(getattr(self.b, prop), value)
+            self.assertEqual(self.asked[-1], f"handsetting {key} {value}")
+            self.assertIn(f"backend.{setter}(", (Path(fds.HERE) / "main.qml").read_text())
+
+    def test_resize_corner_validation(self):
+        self.b.setResizeCornerStyle("glow\nclick native")
+        self.b.setResizeCornerColor("#123456\nclick native")
+        self.assertEqual(self.asked, [])
+        for setter, prop, value, want in (
+            ("setResizeCornerLength", "resizeCornerLength", -1, 1),
+            ("setResizeCornerLength", "resizeCornerLength", 20, 10),
+            ("setResizeCornerWidth", "resizeCornerWidth", 0, 0.5),
+            ("setResizeCornerWidth", "resizeCornerWidth", 20, 6),
+            ("setResizeCornerOpacity", "resizeCornerOpacity", 2, 1),
+            ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 2),
+        ):
+            getattr(self.b, setter)(value)
+            self.assertEqual(getattr(self.b, prop), want)
+        Path(fds.CONF_PATH).write_text("RESIZE_CORNER_STYLE=junk\nRESIZE_CORNER_WIDTH=nan\n")
+        self.assertEqual(self.b.resizeCornerStyle, "sharp")
+        self.assertEqual(self.b.resizeCornerWidth, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

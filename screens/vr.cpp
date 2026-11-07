@@ -117,6 +117,7 @@
 #include "grabthat.h"
 #include "handinput.h"
 #include "softglow.h"
+#include "resizecorner.h"
 #include "overlaytex.h"
 #include "palmmenu.h"
 #include "label.h"
@@ -549,6 +550,8 @@ InGames g_inGames = InGames::Hide;       // during a VR game, the always mode ac
 double g_barPaddingY = barhit::kDefaultPaddingCm, g_barPaddingX = barhit::kDefaultPaddingCm;
 barhit::Style g_barPreview;
 uint64_t g_barVersion = 1;
+resizecorner::Style g_resizeCorner;
+uint64_t g_resizeVersion = 1;
 
 // The controls look like SteamVR's own: a light translucent pill for the bar, dark
 // translucent discs with white glyphs for the buttons (the overlay alpha, kChromeIdle,
@@ -625,7 +628,8 @@ bool DiscRim(double u, double v) { return u * u + v * v > 0.86 * 0.86; }
 // The resize handle draws nothing (user, 2026-10-13: "remove the radio icon thing on corners for resizing
 // and replace them with the glow that is used for grabbing with hand tracking"): it stays as the laser's
 // hit area just outside the corner (its mouse scale, not its texture, sizes that), and the corner's soft
-// glow (UpdateHandGuides: the laser's guide, as a hand's) shows it.
+// indicator (UpdateHandGuides: the laser's guide, as a hand's) shows it. Resize corners now default
+// to a crisp outline; the original glow remains selectable in Display Settings.
 const std::vector<uint8_t> &HandleTexture(bool) {
     static const std::vector<uint8_t> clear(64 * 64 * 4, 0);
     return clear;
@@ -5001,6 +5005,12 @@ struct HandGuide {
 
 void UpdateHandGuides() {
     static std::map<std::string, std::vector<uint8_t>> textures;
+    static uint64_t version = 0;
+    if (version != g_resizeVersion) {
+        textures.clear();
+        for (auto &guide : g_handGuides) guide.key.clear();
+        version = g_resizeVersion;
+    }
     const bool on = g_vr && g_handInput.params().edgeGlow && HandInputOn();
     const int64_t now = NowMs();
     for (int k = 0; k < 3; ++k) {
@@ -5036,6 +5046,9 @@ void UpdateHandGuides() {
             continue;
         }
         const double W = s ? s->metres : sp->fit.width, H = s ? s->heightMetres() : sp->fit.height, curve = s ? s->curve : 0;
+        // Only our panels: SteamVR's native panels retain their existing hand feedback.
+        const bool resize = s && hg.g.kind == handinput::Guide::Corner;
+        const bool sharp = resize && g_resizeCorner.sharp;
         double halo = std::round(softglow::Width(HeadDistance(p)) * 1000) / 1000;   // (by the mm: fewer textures)
         // its size and place on the panel
         double u = hg.g.u, v = hg.g.v, wm = 0, hm = 0, arm = 0, r = 0, edge = 1e9;
@@ -5046,6 +5059,11 @@ void UpdateHandGuides() {
                 if (k == 2 && s) halo = std::max(halo, HandleSize(*s));   // (the laser's: as wide as the handle it presses)
                 arm = std::clamp(0.25 * std::min(W, H), 0.03, 0.10);
                 u = hg.g.sx * W / 2, v = hg.g.sy * H / 2, wm = hm = 2 * std::max(arm, halo) * 1.05, curved = true;
+                if (sharp) {
+                    arm = g_resizeCorner.lengthCm / 100;
+                    wm = hm = 2 * (arm + g_resizeCorner.widthMm / 1000 + 0.004);
+                    tw = th = 256;
+                }
                 break;
             case handinput::Guide::Edge: {
                 const double along = hg.g.sy ? W : H;
@@ -5073,13 +5091,22 @@ void UpdateHandGuides() {
             default: break;
         }
         char key[160];
-        std::snprintf(key, sizeof key, "%d %d %d %d %d %d %.0f %.0f %.0f %.0f", int(hg.g.kind), hg.g.sx, hg.g.sy, hg.g.selected, tw, th,
-                      halo / wm * 200, arm / wm * 200, r / wm * 200, std::min(edge, wm) / wm * 200);
+        std::snprintf(key, sizeof key, "%d %d %d %d %d %d %.0f %.0f %.0f %.0f %d %d", int(hg.g.kind), hg.g.sx, hg.g.sy, hg.g.selected, tw, th,
+                      halo / wm * 200, arm / wm * 200, r / wm * 200, std::min(edge, wm) / wm * 200, resize, sharp);
         if (hg.key != key) {
             auto t = textures.find(key);
             if (t == textures.end()) {
                 if (textures.size() > 48) textures.clear();
-                t = textures.emplace(key, softglow::GuideTexture(hg.g, tw, th, wm, halo, arm, r, edge)).first;
+                auto px = sharp ? resizecorner::Texture(tw, wm, hg.g.sx, hg.g.sy, g_resizeCorner)
+                                : softglow::GuideTexture(hg.g, tw, th, wm, halo, arm, r, edge);
+                if (resize && !sharp) {
+                    for (size_t i = 0; i < px.size(); i += 4) {
+                        px[i] = uint8_t(g_resizeCorner.color >> 16);
+                        px[i + 1] = uint8_t(g_resizeCorner.color >> 8);
+                        px[i + 2] = uint8_t(g_resizeCorner.color);
+                    }
+                }
+                t = textures.emplace(key, std::move(px)).first;
             }
             overlaytex::Set(hg.overlay, t->second.data(), tw, th);
             hg.key = key;
@@ -5090,9 +5117,10 @@ void UpdateHandGuides() {
         const double out = hg.g.kind == handinput::Guide::Touch ? 0.003 : 0;
         const Mat m = Mul(p, s ? OnSurface(*s, u, v, out) : Translation(u, v, out + 0.003));
         vr::VROverlay()->SetOverlayTransformAbsolute(hg.overlay, vr::TrackingUniverseStanding, &m);
-        if (std::fabs(hg.alpha - hg.shownAlpha) > 0.01) {
-            vr::VROverlay()->SetOverlayAlpha(hg.overlay, float(hg.alpha));
-            hg.shownAlpha = hg.alpha;
+        const double alpha = hg.alpha * (resize ? g_resizeCorner.opacity : 1);
+        if (std::fabs(alpha - hg.shownAlpha) > 0.01) {
+            vr::VROverlay()->SetOverlayAlpha(hg.overlay, float(alpha));
+            hg.shownAlpha = alpha;
         }
         if (!hg.shown) vr::VROverlay()->ShowOverlay(hg.overlay), hg.shown = true;
     }
@@ -5536,8 +5564,13 @@ bool ft_vr_init(void) {
     num("GRAB_BAR_PREVIEW_OPACITY", g_barPreview.opacity, 0, 1);
     num("GRAB_BAR_OUTLINE_OPACITY", g_barPreview.outlineOpacity, 0, 1);
     num("GRAB_BAR_OUTLINE_WIDTH", g_barPreview.outlineWidth, 0, 8);
+    g_resizeCorner.sharp = handcut::Setting("RESIZE_CORNER_STYLE", "sharp") != "glow";
+    num("RESIZE_CORNER_OPACITY", g_resizeCorner.opacity, 0, 1);
+    num("RESIZE_CORNER_LENGTH", g_resizeCorner.lengthCm, 1, 10);
+    num("RESIZE_CORNER_WIDTH", g_resizeCorner.widthMm, 0.5, 6);
     for (auto entry : {std::pair{"GRAB_BAR_PREVIEW_COLOR", &g_barPreview.color},
-                       std::pair{"GRAB_BAR_OUTLINE_COLOR", &g_barPreview.outlineColor}}) {
+                       std::pair{"GRAB_BAR_OUTLINE_COLOR", &g_barPreview.outlineColor},
+                       std::pair{"RESIZE_CORNER_COLOR", &g_resizeCorner.color}}) {
         const auto value = handcut::Setting(entry.first, "");
         if (!value.empty() && !barhit::Color(value.c_str(), entry.second))
             std::fprintf(stderr, "frametop.conf: %s must be #RRGGBB; using the default\n", entry.first);
@@ -7076,6 +7109,25 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
     int &rr = parsed.rr;
     switch (verb) {
     case vrcmd::HandSetting: {
+        if (!std::strncmp(key, "RESIZE_CORNER_", 14)) {
+            const std::string name = key;
+            bool valid = false;
+            double value;
+            if (name == "RESIZE_CORNER_STYLE" && (!std::strcmp(word, "sharp") || !std::strcmp(word, "glow")))
+                g_resizeCorner.sharp = !std::strcmp(word, "sharp"), valid = true;
+            else if (name == "RESIZE_CORNER_COLOR") valid = barhit::Color(word, &g_resizeCorner.color);
+            else if (ft_conf_number(word, &value)) {
+                double *setting = nullptr, lo = 0, hi = 1;
+                if (name == "RESIZE_CORNER_OPACITY") setting = &g_resizeCorner.opacity;
+                else if (name == "RESIZE_CORNER_LENGTH") setting = &g_resizeCorner.lengthCm, lo = 1, hi = 10;
+                else if (name == "RESIZE_CORNER_WIDTH") setting = &g_resizeCorner.widthMm, lo = 0.5, hi = 6;
+                if (setting && value >= lo && value <= hi) *setting = value, valid = true;
+            }
+            if (!valid) return (void)std::snprintf(reply, size, "error invalid resize-corner setting");
+            ++g_resizeVersion;
+            std::snprintf(reply, size, "ok %s %s", key, word);
+            return;
+        }
         if (!std::strncmp(key, "GRAB_BAR_", 9)) {
             const std::string name = key;
             bool valid = false;

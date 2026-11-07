@@ -8,6 +8,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | --- | --- |
 | Keyboard focus follows controller selection of native windows | [Frametop/frametop #87](https://github.com/Frametop/frametop/pull/87) |
 | Configurable drag-zone padding, preview and styling | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
+| Crisp, configurable resize-corner feedback | Local development; no upstream PR yet |
 
 ## Controller-selected native windows get keyboard focus
 
@@ -41,6 +42,10 @@ Actual VR drag-zone preview, cropped from the headset view:
 ![Orange drag zone and outlined hit target surrounding the visible bar](images/drag-zone-vr.png)
 
 Only these two wearer-reviewed crops are published. The uncropped capture stays in ignored local artifacts; screenshot review is required before publishing new captures, which may include private windows or room imagery.
+
+## Crisp resize corners
+
+Replaces Frametop's diffuse corner halo with a sharp, antialiased rounded outline. The indicator still follows any of the four corners; the resize interaction is unchanged. **Display Settings → Visibility & pins → Resize corners** offers sharp/original-glow styles, color, opacity, and sharp-outline arm length and thickness. See [Floating windows](floating-windows.md) for keys and defaults. The screens component builds; rendering checks cover all four orientations, extreme dimensions, antialiasing and a clear panel interior. All 39 relevant settings/documentation tests and changed-file Ruff pass. Local screenshot evidence stays private pending review; headset validation is pending.
 
 ## Branch workflow
 

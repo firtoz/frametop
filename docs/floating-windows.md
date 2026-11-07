@@ -1,5 +1,13 @@
 # Floating windows
 
+## Resize corners
+
+Frametop's resize indicator is a crisp, rounded outline outside the panel, rather than a diffuse white halo. It follows whichever of the four corners a laser or hand approaches; only the active corner is indicated. Resizing and its hit area are unchanged. SteamVR's native windows keep their own controls.
+
+In **Display Settings → Visibility & pins → Resize corners**, choose **Sharp outline** (default) or the original **Soft glow**, color and opacity. The sharp outline also has arm length (1–10 cm, default 4 cm) and thickness (0.5–6 mm, default 2 mm). These physical dimensions do not resize the interaction target. Changes apply live and persist as `RESIZE_CORNER_STYLE` (`sharp`/`glow`), `RESIZE_CORNER_COLOR` (`#f6f9ff`), `RESIZE_CORNER_OPACITY` (0.9), `RESIZE_CORNER_LENGTH` (cm), and `RESIZE_CORNER_WIDTH` (mm). Zero opacity hides feedback without disabling resizing. Edge, button and touch feedback are unchanged.
+
+## Drag zones
+
 The drag bar below a screen or floating window can have a larger laser target. In **Frametop Display Settings → Visibility & pins → Window controls**, set **Vertical padding** and **Horizontal padding** independently in centimetres, from 0 to 50 cm per side (default: 2 cm). For example, 2 cm horizontal padding adds 2 cm on the left and right: the target is 4 cm wider than the visible pill. Zero padding gives the original target. These apply immediately to controller lasers and the 3D mouse, and are saved as `GRAB_BAR_PADDING_Y` and `GRAB_BAR_PADDING_X` in `~/.config/frametop.conf`. Padding stays the same physical size as the visible pill auto-sizes with distance and window width; there is no multiplier mode. The row moves down and neighboring buttons move sideways as needed so the target cannot cover window content or those buttons. Near-hand grab margins remain separate.
 
 **Show drag zone** displays the draggable rectangle with a translucent fill and thin outline whenever its bar shows. **Keep drag zones visible** keeps those bars and previews visible while their panels show; hidden, minimized or paused panels still hide them. Fill and outline each have a color picker and opacity slider. Outline thickness is adjustable from 0 (none) to 8 pixels at the original pill's resolution. These preferences persist too: `GRAB_BAR_PREVIEW`, `GRAB_BAR_PREVIEW_ALWAYS`, `GRAB_BAR_PREVIEW_COLOR`, `GRAB_BAR_PREVIEW_OPACITY`, `GRAB_BAR_OUTLINE_COLOR`, `GRAB_BAR_OUTLINE_OPACITY`, `GRAB_BAR_OUTLINE_WIDTH`. Opacity also follows the bar's normal fade and idle dimming.

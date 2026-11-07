@@ -51,6 +51,8 @@ test-c:
     }
     g++ -std=c++17 -Wall -Wextra -Werror screens/tests/barhit-test.cpp -o build/tests/barhit-test
     run screens/tests/barhit-test.cpp build/tests/barhit-test
+    g++ -std=c++17 -Wall -Wextra -Werror screens/tests/resizecorner-test.cpp -o build/tests/resizecorner-test
+    run screens/tests/resizecorner-test.cpp build/tests/resizecorner-test
     gcc -std=c11 -Wall -Wextra -Werror -I. screens/tests/controller-click-test.c \
       -lm -o build/tests/controller-click-test
     run screens/tests/controller-click-test.c build/tests/controller-click-test
