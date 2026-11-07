@@ -8,7 +8,7 @@ int main() {
     for (double length : {1.0, 4.0, 10.0})
         for (double width : {0.5, 2.0, 6.0}) {
             style.lengthCm = length, style.widthMm = width, style.color = 0x12abef;
-            const double size = 2 * (length / 100 + width / 1000 + 0.004);
+            const double size = resizecorner::Canvas(style);
             const auto base = resizecorner::Texture(n, size, 1, -1, style);
             for (int sx : {-1, 1}) for (int sy : {-1, 1}) {
                 const auto px = resizecorner::Texture(n, size, sx, sy, style);
@@ -27,5 +27,25 @@ int main() {
                 assert(aa > 0 && clear > n * n * 0.8);
             }
         }
-    std::cout << "ok crisp corners: all orientations, bounded canvas, clear panel, solid stroke, antialiased edges\n";
+    for (double gap : {0.0, 2.0, 10.0}) {
+        style.gapCm = gap;
+        const double size = resizecorner::Canvas(style);
+        const auto idle = resizecorner::Texture(n, size, 1, -1, style);
+        const auto ready = resizecorner::Texture(n, size, 1, -1, style, true);
+        int idleArea = 0, readyArea = 0;
+        for (int y = 0; y < n; ++y) for (int x = 0; x < n; ++x) {
+            const auto i = (size_t(y) * n + x) * 4;
+            idleArea += idle[i + 3] > 0, readyArea += ready[i + 3] > 0;
+            if (ready[i + 3]) {
+                assert(ready[i] == uint8_t(style.hoverColor >> 16));
+                if (x == 0 || y == 0 || x == n - 1 || y == n - 1) assert(false);
+                const double X = (x + 0.5 - n / 2.0) * size / n;
+                const double Y = (y + 0.5 - n / 2.0) * size / n;
+                const double distance = std::hypot(std::max(X, 0.0), std::max(Y, 0.0));
+                assert(distance >= gap / 100 - size / n);
+            }
+        }
+        assert(readyArea > idleArea);
+    }
+    std::cout << "ok crisp corners: orientations, gap clearance, bounded canvas, AA, distinct thicker hover state\n";
 }

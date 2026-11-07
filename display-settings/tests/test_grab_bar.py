@@ -136,12 +136,19 @@ class GrabBar(unittest.TestCase):
         self.assertEqual(self.b.resizeCornerLength, 4)
         self.assertEqual(self.b.resizeCornerWidth, 2)
         self.assertEqual(self.b.resizeCornerOpacity, 0.9)
+        self.assertEqual(self.b.resizeCornerGap, 2)
+        self.assertEqual(self.b.resizeCornerTarget, 12)
+        self.assertEqual(self.b.resizeCornerReach, 20)
         for prop, setter, key, value in (
             ("resizeCornerStyle", "setResizeCornerStyle", "RESIZE_CORNER_STYLE", "glow"),
             ("resizeCornerColor", "setResizeCornerColor", "RESIZE_CORNER_COLOR", "#abcdef"),
             ("resizeCornerLength", "setResizeCornerLength", "RESIZE_CORNER_LENGTH", 5.5),
             ("resizeCornerWidth", "setResizeCornerWidth", "RESIZE_CORNER_WIDTH", 1.5),
             ("resizeCornerOpacity", "setResizeCornerOpacity", "RESIZE_CORNER_OPACITY", 0.8),
+            ("resizeCornerGap", "setResizeCornerGap", "RESIZE_CORNER_GAP", 3.5),
+            ("resizeCornerTarget", "setResizeCornerTarget", "RESIZE_CORNER_TARGET", 16.5),
+            ("resizeCornerReach", "setResizeCornerReach", "RESIZE_CORNER_REACH", 25.5),
+            ("resizeCornerHoverColor", "setResizeCornerHoverColor", "RESIZE_CORNER_HOVER_COLOR", "#00ffff"),
         ):
             getattr(self.b, setter)(value)
             self.assertEqual(getattr(self.b, prop), value)
@@ -159,6 +166,11 @@ class GrabBar(unittest.TestCase):
             ("setResizeCornerWidth", "resizeCornerWidth", 20, 6),
             ("setResizeCornerOpacity", "resizeCornerOpacity", 2, 1),
             ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 2),
+            ("setResizeCornerGap", "resizeCornerGap", -1, 0),
+            ("setResizeCornerGap", "resizeCornerGap", 50, 10),
+            ("setResizeCornerTarget", "resizeCornerTarget", 0, 1),
+            ("setResizeCornerReach", "resizeCornerReach", 100, 50),
+            ("setResizeCornerTarget", "resizeCornerTarget", float("inf"), 12),
         ):
             getattr(self.b, setter)(value)
             self.assertEqual(getattr(self.b, prop), want)

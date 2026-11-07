@@ -1252,11 +1252,64 @@ Kirigami.ApplicationWindow {
                         }
                         Controls.Label { text: resizeCornerWidth.value.toFixed(1) + " mm" }
                     }
+                    RowLayout {
+                        Kirigami.FormData.label: "Gap from window:"
+                        enabled: backend.resizeCornerStyle === "sharp"
+                        Controls.Slider {
+                            id: resizeCornerGap
+                            from: 0; to: 10; stepSize: 0.1
+                            value: backend.resizeCornerGap
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerGap(value)
+                        }
+                        Controls.Label { text: resizeCornerGap.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Laser hover target size:"
+                        Controls.Slider {
+                            id: resizeCornerTarget
+                            from: 1; to: 50; stepSize: 0.5
+                            value: backend.resizeCornerTarget
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerTarget(value)
+                        }
+                        Controls.Label { text: resizeCornerTarget.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Approach preview radius:"
+                        Controls.Slider {
+                            id: resizeCornerReach
+                            from: 1; to: 50; stepSize: 0.5
+                            value: backend.resizeCornerReach
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerReach(value)
+                        }
+                        Controls.Label { text: resizeCornerReach.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Ready-to-drag color:"
+                        Rectangle {
+                            color: backend.resizeCornerHoverColor
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                            Layout.preferredHeight: Kirigami.Units.gridUnit
+                            border.color: Kirigami.Theme.textColor
+                        }
+                        Controls.Button { text: "Choose…"; onClicked: resizeCornerHoverColorDialog.open() }
+                        ColorDialog {
+                            id: resizeCornerHoverColorDialog
+                            title: "Ready-to-drag corner color"
+                            selectedColor: backend.resizeCornerHoverColor
+                            onAccepted: backend.setResizeCornerHoverColor(selectedColor.toString())
+                        }
+                    }
                     Controls.Label {
                         text: "A crisp, rounded corner outside the panel, or the original soft glow. "
                               + "The indicator follows whichever of the four corners you approach. "
-                              + "Appearance does not change the resize hit area. Applies live to Frametop panels, "
-                              + "for lasers and hands; SteamVR's native window controls are unchanged."
+                              + "The laser target is a square outside the chosen corner; its size is independent of the outline. "
+                              + "The approach radius shows a preview, but never shrinks below the target's diagonal. "
+                              + "On the actual target, the outline changes color, thickens and becomes fully bright: ready to drag. "
+                              + "Gap and thickness affect the sharp style only. Laser target size also applies to the 3D mouse; "
+                              + "near-hand reach is unchanged. Native SteamVR window controls are unchanged."
                         wrapMode: Text.Wrap
                         opacity: 0.7
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 26

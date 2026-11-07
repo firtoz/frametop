@@ -2,9 +2,13 @@
 
 ## Resize corners
 
-Frametop's resize indicator is a crisp, rounded outline outside the panel, rather than a diffuse white halo. It follows whichever of the four corners a laser or hand approaches; only the active corner is indicated. Resizing and its hit area are unchanged. SteamVR's native windows keep their own controls.
+Frametop's resize indicator is a crisp, rounded outline outside the panel, rather than a diffuse white halo. It follows whichever of the four corners a laser or hand approaches; only the active corner is indicated. SteamVR's native windows keep their own controls.
 
-In **Display Settings → Visibility & pins → Resize corners**, choose **Sharp outline** (default) or the original **Soft glow**, color and opacity. The sharp outline also has arm length (1–10 cm, default 4 cm) and thickness (0.5–6 mm, default 2 mm). These physical dimensions do not resize the interaction target. Changes apply live and persist as `RESIZE_CORNER_STYLE` (`sharp`/`glow`), `RESIZE_CORNER_COLOR` (`#f6f9ff`), `RESIZE_CORNER_OPACITY` (0.9), `RESIZE_CORNER_LENGTH` (cm), and `RESIZE_CORNER_WIDTH` (mm). Zero opacity hides feedback without disabling resizing. Edge, button and touch feedback are unchanged.
+In **Display Settings → Visibility & pins → Resize corners**, choose **Sharp outline** (default) or the original **Soft glow**, color and opacity. The sharp outline also has arm length (1–10 cm, default 4 cm), thickness (0.5–6 mm, default 2 mm), and a clear gap from the panel (0–10 cm, default **2 cm**). Appearance dimensions do not resize the interaction target.
+
+**Laser hover target size** sets the side of the actual square target outside the active corner (1–50 cm, default **12 cm**), for controller lasers and the 3D mouse. **Approach preview radius** controls when the indicator starts appearing (1–50 cm from the corner, default **20 cm**, never less than the target's diagonal). A preview alone does not mean a press will resize: when the laser actually hovers the target, the sharp outline turns cyan, thickens by 60% and reaches full configured opacity. It remains highlighted while resizing. **Ready-to-drag color** is configurable. Near-hand interaction distances remain separate; hand corners highlight when a pinch is eligible.
+
+Changes apply live and persist as `RESIZE_CORNER_STYLE` (`sharp`/`glow`), `RESIZE_CORNER_COLOR` (`#f6f9ff`), `RESIZE_CORNER_OPACITY` (0.9), `RESIZE_CORNER_LENGTH` (cm), `RESIZE_CORNER_WIDTH` (mm), `RESIZE_CORNER_GAP` (cm), `RESIZE_CORNER_TARGET` (cm), `RESIZE_CORNER_REACH` (cm), and `RESIZE_CORNER_HOVER_COLOR` (`#66ddff`). Keep the outline within reach of the target when combining a large gap with a small target. Zero opacity hides feedback without disabling resizing. Edge, button and touch feedback are unchanged.
 
 ## Drag zones
 

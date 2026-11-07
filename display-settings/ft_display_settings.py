@@ -737,6 +737,38 @@ class Backend(QObject):
     def setResizeCornerWidth(self, mm):
         self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 2, 0.5, 6)
 
+    @Property(str, notify=changed)
+    def resizeCornerHoverColor(self):
+        return self._barColor("RESIZE_CORNER_HOVER_COLOR", "#66ddff")
+
+    @Slot(str)
+    def setResizeCornerHoverColor(self, color):
+        self._setBarColor("RESIZE_CORNER_HOVER_COLOR", color)
+
+    @Property(float, notify=changed)
+    def resizeCornerGap(self):
+        return self._barNumber("RESIZE_CORNER_GAP", 2, 0, 10)
+
+    @Slot(float)
+    def setResizeCornerGap(self, cm):
+        self._setBarNumber("RESIZE_CORNER_GAP", cm, 2, 0, 10)
+
+    @Property(float, notify=changed)
+    def resizeCornerTarget(self):
+        return self._barNumber("RESIZE_CORNER_TARGET", 12, 1, 50)
+
+    @Slot(float)
+    def setResizeCornerTarget(self, cm):
+        self._setBarNumber("RESIZE_CORNER_TARGET", cm, 12, 1, 50)
+
+    @Property(float, notify=changed)
+    def resizeCornerReach(self):
+        return self._barNumber("RESIZE_CORNER_REACH", 20, 1, 50)
+
+    @Slot(float)
+    def setResizeCornerReach(self, cm):
+        self._setBarNumber("RESIZE_CORNER_REACH", cm, 20, 1, 50)
+
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows
     # walking only: no turning, looking up or down, or crouching.

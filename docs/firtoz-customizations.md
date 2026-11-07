@@ -45,6 +45,8 @@ Only these two wearer-reviewed crops are published. The uncropped capture stays 
 
 ## Crisp resize corners
 
+Follow-up: the sharp outline defaults to a 2 cm clear gap. Gap, actual laser hover-target size and approach-preview radius are independently configurable. Actual hover/drag uses a distinct configurable color, full configured opacity and a 60% thicker sharp outline, rather than only the approach fade. Native controls and near-hand reach remain unchanged. Rendering checks include gap clearance at 0/2/10 cm and distinct hover styling; the screens build and all 39 relevant settings/documentation tests pass. This follow-up awaits installation and wearer review.
+
 Replaces Frametop's diffuse corner halo with a sharp, antialiased rounded outline. The indicator still follows any of the four corners; the resize interaction is unchanged. **Display Settings → Visibility & pins → Resize corners** offers sharp/original-glow styles, color, opacity, and sharp-outline arm length and thickness. See [Floating windows](floating-windows.md) for keys and defaults. The screens component builds; rendering checks cover all four orientations, extreme dimensions, antialiasing and a clear panel interior. All 39 relevant settings/documentation tests and changed-file Ruff pass. Local screenshot evidence stays private pending review; headset validation is pending.
 
 ## Branch workflow
