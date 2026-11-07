@@ -23,12 +23,17 @@ RESIZE_CORNER_STYLE=sharp       # sharp custom outline | native (gray/white, gro
 RESIZE_CORNER_COLOR='#f6f9ff'    # indicator color, #RRGGBB
 RESIZE_CORNER_OPACITY=0.9        # 0..1; 0 hides feedback, not the resize target
 RESIZE_CORNER_LENGTH=4           # sharp outline arm length, 1..10 cm
-RESIZE_CORNER_WIDTH=2            # sharp outline thickness, 0.5..6 mm; applies live in Display Settings > Visibility & pins
+RESIZE_CORNER_WIDTH=3            # outline thickness, 0.5..6 mm; default 3 mm, applies live in Display Settings > Visibility & pins
 RESIZE_CORNER_GAP=2              # clear space between sharp outline and window, 0..10 cm
 RESIZE_CORNER_TARGET=12          # laser/3D-mouse resize target: square side outside the corner, 1..50 cm
 RESIZE_CORNER_REACH=20           # approach preview radius from corner, 1..50 cm; at least target diagonal
 RESIZE_CORNER_HOVER_COLOR='#66ddff' # actual draggable hover/held state; sharp outline is also thicker and fully bright
 RESIZE_CORNER_ROUNDNESS=100       # outline bend: 0 square, 100 fully rounded; sharp and native styles, applies live
+RESIZE_CORNER_PREVIEW=0           # translucent square + outline for visible corners' laser hover targets (not the approach radius)
+RESIZE_CORNER_ALWAYS_TL=0         # keep top-left feedback visible on visible panels (never through pause/minimize/hide)
+RESIZE_CORNER_ALWAYS_TR=0         # keep top-right feedback visible; each corner independent, any/all/none
+RESIZE_CORNER_ALWAYS_BL=0         # keep bottom-left feedback visible
+RESIZE_CORNER_ALWAYS_BR=0         # keep bottom-right feedback visible; automatic approach feedback still works at other corners
 DASHBOARD_APPS=steamvr # apps from the SteamVR dashboard's Launch a program list: steamvr = SteamVR windows | frametop = Frametop floating windows (SteamVR's when the desktop isn't running, Frametop is paused, or every floating window is in use; applies at once)
 NOTIFY_FORWARD=auto # the desktop's notifications go to the Steam session's notification server (e.g. VR toasts), Plasma's popups off: auto = unless that's SteamOS's steam_notif_daemon | on | off (restart the desktop after a change)
 FIREFOX_TITLEBAR=kwin # Firefox in the desktop: kwin = KWin's title bar, with Frametop's float button | firefox = its own, tabs in the title bar (restart the desktop after a change)

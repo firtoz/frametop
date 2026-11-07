@@ -552,6 +552,8 @@ barhit::Style g_barPreview;
 uint64_t g_barVersion = 1;
 resizecorner::Style g_resizeCorner;
 uint64_t g_resizeVersion = 1;
+constexpr const char *kResizeAlwaysKeys[] = {"RESIZE_CORNER_ALWAYS_TL", "RESIZE_CORNER_ALWAYS_TR",
+                                           "RESIZE_CORNER_ALWAYS_BL", "RESIZE_CORNER_ALWAYS_BR"};
 
 // The controls look like SteamVR's own: a light translucent pill for the bar, dark
 // translucent discs with white glyphs for the buttons (the overlay alpha, kChromeIdle,
@@ -5005,19 +5007,137 @@ struct HandGuide {
     handinput::Guide g;        // what it shows (kept while it fades out)
 } g_handGuides[3];   // the left hand's, the right's, and the lasers' (a corner: g_laserCorner)
 
-void UpdateHandGuides() {
+struct ResizeVisual {
+    vr::VROverlayHandle_t outline = vr::k_ulOverlayHandleInvalid, target = vr::k_ulOverlayHandleInvalid;
+    bool shown = false, targetShown = false;
+    double hover = 0, alpha = 0;
+    int64_t lastMs = 0;
+    uint64_t version = 0;
+    std::string key;
+};
+std::map<std::pair<int, int>, ResizeVisual> g_resizeVisuals;
+unsigned g_resizeVisualId = 0;
+
+void DestroyResizeVisual(ResizeVisual &v) {
+    for (auto o : {v.outline, v.target}) if (o != vr::k_ulOverlayHandleInvalid) {
+        overlaytex::Forget(o);
+        vr::VROverlay()->DestroyOverlay(o);
+    }
+}
+
+// Visual-only overlays for any combination of persistent corners. The existing single
+// interactive handle still follows the aimed corner; diagnostic targets never take input.
+void UpdateResizeVisuals() {
     static std::map<std::string, std::vector<uint8_t>> textures;
     static uint64_t version = 0;
-    if (version != g_resizeVersion) {
-        textures.clear();
-        for (auto &guide : g_handGuides) guide.key.clear();
-        version = g_resizeVersion;
+    if (version != g_resizeVersion) textures.clear(), version = g_resizeVersion;
+    for (auto it = g_resizeVisuals.begin(); it != g_resizeVisuals.end();) {
+        if (!g_screens.count(it->first.first)) DestroyResizeVisual(it->second), it = g_resizeVisuals.erase(it);
+        else ++it;
     }
+    const int64_t now = NowMs();
+    for (auto &[panel, s] : g_screens) for (int corner = 0; corner < 4; ++corner) {
+        const int sx = corner % 2 ? 1 : -1, sy = corner < 2 ? 1 : -1;
+        const bool active = sx == s.cornerX && sy == s.cornerY;
+        bool ready = active && (s.hover[3] || s.drag == Drag::Resize);
+        double strength = 0;
+        auto guide = [&](const handinput::Guide &g, bool hand) {
+            if (g.kind != handinput::Guide::Corner || g.panel != panel || g.sx != sx || g.sy != sy) return;
+            strength = std::max(strength, g.strength);
+            ready |= g.selected || (hand && g.strength >= 0.5);
+        };
+        guide(g_laserCorner, false);
+        if (g_handInput.params().edgeGlow && HandInputOn())
+            for (int hand = 0; hand < 2; ++hand) guide(g_handInput.guide(hand), true);
+        Mat pose;
+        const bool visible = g_vr && s.visible && ScreenPose(s, &pose);
+        const double want = resizecorner::Strength(visible, g_resizeCorner.always[corner], strength, ready);
+        if (!visible) ready = false;
+        const auto id = std::pair{panel, corner};
+        if (want <= 0 && !g_resizeVisuals.count(id)) continue;
+        auto &v = g_resizeVisuals[id];
+        const double dt = v.lastMs ? std::clamp((now - v.lastMs) / 1000.0, 0.0, 0.1) : 0;
+        v.lastMs = now;
+        v.hover = resizecorner::Animate(v.hover, ready, dt);
+        v.alpha = want > v.alpha ? std::min(want, v.alpha + dt / 0.08) : std::max(want, v.alpha - dt / 0.18);
+        if (!visible || v.alpha < 0.01) {
+            if (v.shown) vr::VROverlay()->HideOverlay(v.outline), v.shown = false;
+            if (v.targetShown) vr::VROverlay()->HideOverlay(v.target), v.targetShown = false;
+            if (!visible) v.alpha = v.hover = 0;
+            continue;
+        }
+        auto make = [&](vr::VROverlayHandle_t &o, const char *part) {
+            if (o != vr::k_ulOverlayHandleInvalid) return true;
+            // The pointer helper already excludes frametop.guide.* from its hit candidates.
+            const std::string key = "frametop.guide.resize." + std::to_string(++g_resizeVisualId) + part;
+            if (vr::VROverlay()->CreateOverlay(key.c_str(), "Frametop: resize feedback", &o) != vr::VROverlayError_None) return false;
+            vr::VROverlay()->SetOverlaySortOrder(o, 1);
+            return true;
+        };
+        if (!make(v.outline, ".outline")) continue;
+        // Twelve shared, eased animation intervals: bounded CPU/GPU raster caching,
+        // no fresh texture import on every frame, and reversible mid-transition.
+        const int step = int(std::lround(v.hover * 12));
+        const double blend = resizecorner::Ease(step / 12.0);
+        double wm = resizecorner::Canvas(g_resizeCorner);
+        const double halo = softglow::Width(HeadDistance(pose));
+        const double arm = std::clamp(0.25 * std::min(s.metres, s.heightMetres()), 0.03, 0.10);
+        if (!g_resizeCorner.sharp) wm = 2.1 * std::max(arm, std::max(halo, HandleSize(s)));
+        std::string key = std::to_string(corner) + ":" + std::to_string(step);
+        if (!g_resizeCorner.sharp) key += ":" + std::to_string(int(halo / wm * 200)) + ":" + std::to_string(int(arm / wm * 200));
+        if (v.version != g_resizeVersion || v.key != key) {
+            auto t = textures.find(key);
+            if (t == textures.end()) {
+                if (textures.size() >= 64) textures.clear();
+                std::vector<uint8_t> px;
+                if (g_resizeCorner.sharp) px = resizecorner::Texture(256, wm, sx, sy, g_resizeCorner, blend);
+                else {
+                    handinput::Guide g;
+                    g.kind = handinput::Guide::Corner, g.sx = sx, g.sy = sy;
+                    px = softglow::GuideTexture(g, 256, 256, wm, std::max(halo, HandleSize(s)), arm, 0, 1e9);
+                    for (size_t i = 0; i < px.size(); i += 4) {
+                        for (int c = 0; c < 3; ++c) {
+                            const int shift = 16 - 8 * c;
+                            px[i + c] = uint8_t(std::lround(((g_resizeCorner.color >> shift) & 255) * (1 - blend)
+                                                        + ((g_resizeCorner.hoverColor >> shift) & 255) * blend));
+                        }
+                        px[i + 3] = uint8_t(std::min(255.0, px[i + 3] * (1 + blend * 0.54)));
+                    }
+                }
+                t = textures.emplace(key, std::move(px)).first;
+            }
+            overlaytex::Set(v.outline, t->second.data(), 256, 256);
+            v.key = key, v.version = g_resizeVersion;
+        }
+        vr::VROverlay()->SetOverlayWidthInMeters(v.outline, float(wm));
+        vr::VROverlay()->SetOverlayCurvature(v.outline, s.curve > 0 ? float(std::clamp(wm / (2 * M_PI * s.curve), 0.0, 1.0)) : 0.f);
+        const Mat m = Mul(pose, OnSurface(s, sx * s.metres / 2, sy * s.heightMetres() / 2, 0.003));
+        vr::VROverlay()->SetOverlayTransformAbsolute(v.outline, vr::TrackingUniverseStanding, &m);
+        vr::VROverlay()->SetOverlayAlpha(v.outline, float(v.alpha * g_resizeCorner.opacity));
+        if (!v.shown) vr::VROverlay()->ShowOverlay(v.outline), v.shown = true;
+        if (g_resizeCorner.preview && make(v.target, ".target")) {
+            static const auto px = resizecorner::TargetTexture(64);
+            if (!v.targetShown) overlaytex::Set(v.target, px.data(), 64, 64);
+            const double side = HandleSize(s);
+            const Mat target = Mul(pose, OnSurface(s, sx * (s.metres / 2 + side / 2), sy * (s.heightMetres() / 2 + side / 2), 0.003));
+            vr::VROverlay()->SetOverlayTransformAbsolute(v.target, vr::TrackingUniverseStanding, &target);
+            vr::VROverlay()->SetOverlayWidthInMeters(v.target, float(side));
+            vr::VROverlay()->SetOverlayAlpha(v.target, float(v.alpha));
+            if (!v.targetShown) vr::VROverlay()->ShowOverlay(v.target), v.targetShown = true;
+        } else if (v.targetShown) vr::VROverlay()->HideOverlay(v.target), v.targetShown = false;
+    }
+}
+
+void UpdateHandGuides() {
+    static std::map<std::string, std::vector<uint8_t>> textures;
     const bool on = g_vr && g_handInput.params().edgeGlow && HandInputOn();
     const int64_t now = NowMs();
     for (int k = 0; k < 3; ++k) {
         HandGuide &hg = g_handGuides[k];
-        const handinput::Guide g = k == 2 ? (g_vr ? g_laserCorner : handinput::Guide{}) : on ? g_handInput.guide(k) : handinput::Guide{};
+        handinput::Guide g = k == 2 ? (g_vr ? g_laserCorner : handinput::Guide{}) : on ? g_handInput.guide(k) : handinput::Guide{};
+        // Our corner feedback is drawn once per corner, including persistent corners,
+        // rather than layering separate hand and laser indicators over each other.
+        if (g.kind == handinput::Guide::Corner && g_screens.count(g.panel)) g = {};
         const double dt = hg.lastMs ? std::clamp((now - hg.lastMs) / 1000.0, 0.0, 0.1) : 0;
         hg.lastMs = now;
         const bool same = g.kind == hg.g.kind && g.panel == hg.g.panel && g.sx == hg.g.sx && g.sy == hg.g.sy && g.control == hg.g.control;
@@ -5048,11 +5168,6 @@ void UpdateHandGuides() {
             continue;
         }
         const double W = s ? s->metres : sp->fit.width, H = s ? s->heightMetres() : sp->fit.height, curve = s ? s->curve : 0;
-        // Only our panels: SteamVR's native panels retain their existing hand feedback.
-        const bool resize = s && hg.g.kind == handinput::Guide::Corner;
-        const bool sharp = resize && g_resizeCorner.sharp;
-        const bool ready = resize && (hg.g.selected || (k == 2 ? s->hover[3] && hg.g.sx == s->cornerX && hg.g.sy == s->cornerY
-                                                                              : hg.g.strength >= 0.5));
         double halo = std::round(softglow::Width(HeadDistance(p)) * 1000) / 1000;   // (by the mm: fewer textures)
         // its size and place on the panel
         double u = hg.g.u, v = hg.g.v, wm = 0, hm = 0, arm = 0, r = 0, edge = 1e9;
@@ -5063,11 +5178,6 @@ void UpdateHandGuides() {
                 if (k == 2 && s) halo = std::max(halo, HandleSize(*s));   // (the laser's: as wide as the handle it presses)
                 arm = std::clamp(0.25 * std::min(W, H), 0.03, 0.10);
                 u = hg.g.sx * W / 2, v = hg.g.sy * H / 2, wm = hm = 2 * std::max(arm, halo) * 1.05, curved = true;
-                if (sharp) {
-                    arm = g_resizeCorner.lengthCm / 100;
-                    wm = hm = resizecorner::Canvas(g_resizeCorner);
-                    tw = th = 256;
-                }
                 break;
             case handinput::Guide::Edge: {
                 const double along = hg.g.sy ? W : H;
@@ -5095,23 +5205,13 @@ void UpdateHandGuides() {
             default: break;
         }
         char key[160];
-        std::snprintf(key, sizeof key, "%d %d %d %d %d %d %.0f %.0f %.0f %.0f %d %d %d", int(hg.g.kind), hg.g.sx, hg.g.sy, hg.g.selected, tw, th,
-                      halo / wm * 200, arm / wm * 200, r / wm * 200, std::min(edge, wm) / wm * 200, resize, sharp, ready);
+        std::snprintf(key, sizeof key, "%d %d %d %d %d %d %.0f %.0f %.0f %.0f", int(hg.g.kind), hg.g.sx, hg.g.sy, hg.g.selected, tw, th,
+                      halo / wm * 200, arm / wm * 200, r / wm * 200, std::min(edge, wm) / wm * 200);
         if (hg.key != key) {
             auto t = textures.find(key);
             if (t == textures.end()) {
                 if (textures.size() > 48) textures.clear();
-                auto px = sharp ? resizecorner::Texture(tw, wm, hg.g.sx, hg.g.sy, g_resizeCorner, ready)
-                                : softglow::GuideTexture(hg.g, tw, th, wm, halo, arm, r, edge);
-                if (resize && !sharp) {
-                    const uint32_t color = ready ? g_resizeCorner.hoverColor : g_resizeCorner.color;
-                    for (size_t i = 0; i < px.size(); i += 4) {
-                        px[i] = uint8_t(color >> 16);
-                        px[i + 1] = uint8_t(color >> 8);
-                        px[i + 2] = uint8_t(color);
-                    }
-                }
-                t = textures.emplace(key, std::move(px)).first;
+                t = textures.emplace(key, softglow::GuideTexture(hg.g, tw, th, wm, halo, arm, r, edge)).first;
             }
             overlaytex::Set(hg.overlay, t->second.data(), tw, th);
             hg.key = key;
@@ -5122,10 +5222,9 @@ void UpdateHandGuides() {
         const double out = hg.g.kind == handinput::Guide::Touch ? 0.003 : 0;
         const Mat m = Mul(p, s ? OnSurface(*s, u, v, out) : Translation(u, v, out + 0.003));
         vr::VROverlay()->SetOverlayTransformAbsolute(hg.overlay, vr::TrackingUniverseStanding, &m);
-        const double alpha = (ready ? 1 : hg.alpha) * (resize ? g_resizeCorner.opacity : 1);
-        if (std::fabs(alpha - hg.shownAlpha) > 0.01) {
-            vr::VROverlay()->SetOverlayAlpha(hg.overlay, float(alpha));
-            hg.shownAlpha = alpha;
+        if (std::fabs(hg.alpha - hg.shownAlpha) > 0.01) {
+            vr::VROverlay()->SetOverlayAlpha(hg.overlay, float(hg.alpha));
+            hg.shownAlpha = hg.alpha;
         }
         if (!hg.shown) vr::VROverlay()->ShowOverlay(hg.overlay), hg.shown = true;
     }
@@ -5218,6 +5317,7 @@ void UpdateHandInput(void (*handle)(const struct ft_event *, void *), void *data
     UpdateGrabThatAims();
     UpdateTargetGlow();
     UpdateHandGuides();
+    UpdateResizeVisuals();
 
     std::set<int> letGo, thrown;   // panels a hand let go of, and ones thrown, this tick
     for (const handinput::Event &e : g_handInput.events()) {
@@ -5579,6 +5679,9 @@ bool ft_vr_init(void) {
     num("RESIZE_CORNER_TARGET", g_resizeCorner.targetCm, 1, 50);
     num("RESIZE_CORNER_REACH", g_resizeCorner.reachCm, 1, 50);
     num("RESIZE_CORNER_ROUNDNESS", g_resizeCorner.roundness, 0, 100);
+    g_resizeCorner.preview = handcut::Setting("RESIZE_CORNER_PREVIEW", "0") == "1";
+    for (int corner = 0; corner < 4; ++corner)
+        g_resizeCorner.always[corner] = handcut::Setting(kResizeAlwaysKeys[corner], "0") == "1";
     for (auto entry : {std::pair{"GRAB_BAR_PREVIEW_COLOR", &g_barPreview.color},
                        std::pair{"GRAB_BAR_OUTLINE_COLOR", &g_barPreview.outlineColor},
                        std::pair{"RESIZE_CORNER_COLOR", &g_resizeCorner.color},
@@ -5706,6 +5809,8 @@ void ft_vr_shutdown(void) {
     DestroyCarryAids();
     for (HandGuide &hg : g_handGuides)
         if (hg.overlay != vr::k_ulOverlayHandleInvalid) vr::VROverlay()->DestroyOverlay(hg.overlay), hg = HandGuide{};
+    for (auto &[key, visual] : g_resizeVisuals) DestroyResizeVisual(visual);
+    g_resizeVisuals.clear();
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     for (auto &[k, h] : g_imports) vr::VRIPCResourceManager()->UnrefResource(h);
     overlaytex::Shutdown();
@@ -7139,6 +7244,11 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
                 else if (name == "RESIZE_CORNER_REACH") setting = &g_resizeCorner.reachCm, lo = 1, hi = 50;
                 else if (name == "RESIZE_CORNER_ROUNDNESS") setting = &g_resizeCorner.roundness, hi = 100;
                 if (setting && value >= lo && value <= hi) *setting = value, valid = true;
+                if (value == 0 || value == 1) {
+                    if (name == "RESIZE_CORNER_PREVIEW") g_resizeCorner.preview = value != 0, valid = true;
+                    for (int corner = 0; corner < 4; ++corner)
+                        if (name == kResizeAlwaysKeys[corner]) g_resizeCorner.always[corner] = value != 0, valid = true;
+                }
             }
             if (!valid) return (void)std::snprintf(reply, size, "error invalid resize-corner setting");
             ++g_resizeVersion;

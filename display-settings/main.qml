@@ -1195,6 +1195,23 @@ Kirigami.ApplicationWindow {
                     }
 
                     Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Resize corners" }
+                    Controls.CheckBox {
+                        text: "Preview resize hover targets"
+                        checked: backend.resizeCornerPreview
+                        onToggled: backend.setResizeCornerPreview(checked)
+                    }
+                    Repeater {
+                        model: 4
+                        delegate: Controls.CheckBox {
+                            required property int index
+                            text: "Always show " + ["top-left", "top-right", "bottom-left", "bottom-right"][index] + " corner"
+                            checked: backend.resizeCornerAlways[index]
+                            onToggled: {
+                                backend.setResizeCornerAlways(index, checked)
+                                checked = Qt.binding(() => backend.resizeCornerAlways[index])
+                            }
+                        }
+                    }
                     Controls.ComboBox {
                         Kirigami.FormData.label: "Indicator style:"
                         model: ["Sharp outline", "Soft glow (original)", "Native-like (gray → white)"]
@@ -1325,6 +1342,9 @@ Kirigami.ApplicationWindow {
                               + "Native-like uses gray then almost-white feedback, with 12% longer arms, 20% thicker lines "
                               + "and 3 mm extra gap on hover, without overwriting your custom colors. "
                               + "Roundness runs from a square bend to a full round bend; dimensions affect outline styles only. "
+                              + "Hover growth/shrink and color changes animate over 180 ms. The preview draws the square target, "
+                              + "not the approach radius. Always-show choices keep any combination of corners visible on visible panels; "
+                              + "they do not bypass hiding, minimizing or pausing, or disable automatic feedback at other corners. "
                               + "Laser target size also applies to the 3D mouse; "
                               + "near-hand reach is unchanged. Native SteamVR window controls are unchanged."
                         wrapMode: Text.Wrap

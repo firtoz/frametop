@@ -74,5 +74,32 @@ int main() {
     const auto square = resizecorner::Texture(n, resizecorner::Canvas(style), 1, -1, style);
     style.roundness = 100;
     assert(square != resizecorner::Texture(n, resizecorner::Canvas(style), 1, -1, style));
+    double animated = 0;
+    for (int i = 0; i < 8; ++i) {
+        const double next = resizecorner::Animate(animated, true, 0.01);
+        assert(next > animated && next < 1);
+        animated = next;
+    }
+    const double reversed = resizecorner::Animate(animated, false, 0.01);
+    assert(reversed > 0 && reversed < animated);
+    for (int i = 0; i < 100; ++i) animated = resizecorner::Animate(animated, false, 0.01);
+    assert(animated == 0);
+    for (int i = 0; i < 100; ++i) animated = resizecorner::Animate(animated, true, 0.01);
+    assert(animated == 1);
+    assert(resizecorner::Ease(0) == 0 && resizecorner::Ease(1) == 1);
+    for (int mask = 0; mask < 16; ++mask) for (int c = 0; c < 4; ++c) {
+        const bool always = mask & (1 << c);
+        assert(resizecorner::Strength(false, always, 1, true) == 0);
+        assert((resizecorner::Strength(true, always, 0, false) > 0) == always);
+        assert(resizecorner::Strength(true, always, 0, true) == 1);
+    }
+    const auto target = resizecorner::TargetTexture(64);
+    assert(target[3] > target[(32 * 64 + 32) * 4 + 3]);
+    assert(style.widthMm == 3);
+    style.native = true;
+    const double canvas = resizecorner::Canvas(style);
+    const auto middle = resizecorner::Texture(n, canvas, 1, -1, style, 0.5);
+    assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 0));
+    assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 1));
     std::cout << "ok crisp corners: gap, AA, hover, native gray/white growth, roundness and clear canvas\n";
 }

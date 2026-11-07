@@ -731,11 +731,11 @@ class Backend(QObject):
 
     @Property(float, notify=changed)
     def resizeCornerWidth(self):
-        return self._barNumber("RESIZE_CORNER_WIDTH", 2, 0.5, 6)
+        return self._barNumber("RESIZE_CORNER_WIDTH", 3, 0.5, 6)
 
     @Slot(float)
     def setResizeCornerWidth(self, mm):
-        self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 2, 0.5, 6)
+        self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 3, 0.5, 6)
 
     @Property(str, notify=changed)
     def resizeCornerHoverColor(self):
@@ -776,6 +776,25 @@ class Backend(QObject):
     @Slot(float)
     def setResizeCornerRoundness(self, percent):
         self._setBarNumber("RESIZE_CORNER_ROUNDNESS", percent, 100, 0, 100)
+
+    @Property(bool, notify=changed)
+    def resizeCornerPreview(self):
+        return ft_layout.read_conf().get("RESIZE_CORNER_PREVIEW", "0") == "1"
+
+    @Slot(bool)
+    def setResizeCornerPreview(self, on):
+        self._setBar("RESIZE_CORNER_PREVIEW", "1" if on else "0")
+
+    @Property("QVariantList", notify=changed)
+    def resizeCornerAlways(self):
+        conf = ft_layout.read_conf()
+        return [conf.get(f"RESIZE_CORNER_ALWAYS_{corner}", "0") == "1"
+                for corner in ("TL", "TR", "BL", "BR")]
+
+    @Slot(int, bool)
+    def setResizeCornerAlways(self, index, on):
+        if 0 <= index < 4:
+            self._setBar(f"RESIZE_CORNER_ALWAYS_{('TL', 'TR', 'BL', 'BR')[index]}", "1" if on else "0")
 
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows

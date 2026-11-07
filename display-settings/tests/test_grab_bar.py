@@ -134,7 +134,7 @@ class GrabBar(unittest.TestCase):
         self.assertEqual(self.b.resizeCornerStyle, "sharp")
         self.assertEqual(self.b.resizeCornerColor, "#f6f9ff")
         self.assertEqual(self.b.resizeCornerLength, 4)
-        self.assertEqual(self.b.resizeCornerWidth, 2)
+        self.assertEqual(self.b.resizeCornerWidth, 3)
         self.assertEqual(self.b.resizeCornerOpacity, 0.9)
         self.assertEqual(self.b.resizeCornerGap, 2)
         self.assertEqual(self.b.resizeCornerTarget, 12)
@@ -168,7 +168,7 @@ class GrabBar(unittest.TestCase):
             ("setResizeCornerWidth", "resizeCornerWidth", 0, 0.5),
             ("setResizeCornerWidth", "resizeCornerWidth", 20, 6),
             ("setResizeCornerOpacity", "resizeCornerOpacity", 2, 1),
-            ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 2),
+            ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 3),
             ("setResizeCornerGap", "resizeCornerGap", -1, 0),
             ("setResizeCornerGap", "resizeCornerGap", 50, 10),
             ("setResizeCornerTarget", "resizeCornerTarget", 0, 1),
@@ -181,7 +181,29 @@ class GrabBar(unittest.TestCase):
             self.assertEqual(getattr(self.b, prop), want)
         Path(fds.CONF_PATH).write_text("RESIZE_CORNER_STYLE=junk\nRESIZE_CORNER_WIDTH=nan\n")
         self.assertEqual(self.b.resizeCornerStyle, "sharp")
-        self.assertEqual(self.b.resizeCornerWidth, 2)
+        self.assertEqual(self.b.resizeCornerWidth, 3)
+
+    def test_resize_corner_preview_and_all_persistent_combinations(self):
+        self.assertFalse(self.b.resizeCornerPreview)
+        self.assertEqual(self.b.resizeCornerAlways, [False] * 4)
+        self.b.setResizeCornerPreview(True)
+        self.assertTrue(self.b.resizeCornerPreview)
+        self.assertEqual(self.asked[-1], "handsetting RESIZE_CORNER_PREVIEW 1")
+        for mask in range(16):
+            for corner, key in enumerate(("TL", "TR", "BL", "BR")):
+                on = bool(mask & (1 << corner))
+                self.b.setResizeCornerAlways(corner, on)
+                self.assertEqual(self.asked[-1], f"handsetting RESIZE_CORNER_ALWAYS_{key} {int(on)}")
+            self.assertEqual(self.b.resizeCornerAlways, [bool(mask & (1 << c)) for c in range(4)])
+        count = len(self.asked)
+        for bad in (-1, 4, 100):
+            self.b.setResizeCornerAlways(bad, True)
+        self.assertEqual(len(self.asked), count)
+        # Hiding diagnostics must not erase persistent-corner choices or a saved thickness.
+        self.b.setResizeCornerWidth(4)
+        self.b.setResizeCornerPreview(False)
+        self.assertEqual(self.b.resizeCornerAlways, [True] * 4)
+        self.assertEqual(self.b.resizeCornerWidth, 4)
 
 
 if __name__ == "__main__":
