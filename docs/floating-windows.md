@@ -1,5 +1,7 @@
 # Floating windows
 
+The drag bar below a screen or floating window can have a taller invisible laser target. In **Frametop Display Settings → Visibility & pins → Window controls**, set **Drag bar target height** from 1× (the original hit area) to 5×. This applies immediately to controller lasers and the 3D mouse, and is saved as `GRAB_BAR_HIT_SCALE` in `~/.config/frametop.conf`. The pill's visible size and target width stay unchanged; the control row moves down when needed so the taller target cannot cover the window's content. Near-hand grab margins remain separate.
+
 Any desktop app can float in VR in a panel of its own, like SteamVR's floating windows, while it stays part of the Frametop desktop. Drag and drop, the clipboard, and focus keep working between floating windows and the screens.
 
 - **Float a window** with "Float in VR" in its window menu (Alt+F3), the float button left of Close in its title bar, or the float key (Meta+Shift+F by default). Start an app floating with "Launch as Standalone" in its right-click menu in the Application Launcher or the taskbar, with `ft-float launch` or `ft-float run`, or from a profile ([profiles.md](profiles.md)).

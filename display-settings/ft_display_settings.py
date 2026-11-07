@@ -31,6 +31,7 @@ that touches SteamVR runs layout/ft-layout on the host.
 Launch with display-settings/ft-display-settings (host wrapper).
 """
 import json
+import math
 import os
 import sys
 import threading
@@ -595,6 +596,22 @@ class Backend(QObject):
                                   "(its compositor is older than hiding screens one at a time)", False)
         if self._running:
             self._ask_screens(f"{'reveal' if shown else 'conceal'} {index + 1}", then=applied)
+
+    @Property(float, notify=changed)
+    def grabBarHitScale(self):
+        scale = ft_conf.number(ft_layout.read_conf(), "GRAB_BAR_HIT_SCALE", 1.0)
+        if not 1.0 <= scale <= 5.0:
+            ft_conf.warn(f"frametop.conf: GRAB_BAR_HIT_SCALE={scale:g} isn't from 1 to 5; using 1")
+            return 1.0
+        return scale
+
+    @Slot(float)
+    def setGrabBarHitScale(self, scale):
+        scale = max(1.0, min(5.0, scale)) if math.isfinite(scale) else 1.0
+        write_conf_value("GRAB_BAR_HIT_SCALE", f"{scale:g}")
+        if self._running and ft_layout.backend() == "screens":
+            self._ask_screens(f"handsetting GRAB_BAR_HIT_SCALE {scale:g}")
+        self.changed.emit()
 
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows

@@ -122,6 +122,7 @@
 #include "label.h"
 #include "roomview.h"
 #include "levelpin.h"
+#include "barhit.h"
 #include "posemath.h"
 #include "../conf/ftsock.h"
 #include "vrcmd.h"
@@ -857,6 +858,7 @@ bool ScreenPose(const Screen &s, Mat *out) {
 // geometric mean of 12% of the width and 10% of the distance), so a small screen near you
 // gets small controls and a big or far one gets big ones, never under about 1.7 degrees.
 double g_handButton = 0.024;   // HANDS_BUTTON_SIZE: a hand at a panel makes its round buttons at least this wide (m)
+double g_barHitScale = barhit::kDefaultScale;   // GRAB_BAR_HIT_SCALE: laser target height, not the visible pill
 
 void ChromeSize(Screen &s) {
     Mat head, p;
@@ -892,7 +894,7 @@ Mat OnSurface(const Screen &s, double u, double v, double dz) {
 // off the edge of the displays so it's easier to trigger"), all of it outside the corner. The laser's
 // corner glow is as wide (UpdateHandGuides).
 double HandleSize(const Screen &s) { return s.grip * 1.8; }
-double BarY(const Screen &s) { return -(s.heightMetres() / 2 + s.chrome * 0.06 + std::max(s.chrome * 12 / 256, s.grip / 2)); }
+double BarY(const Screen &s) { return -(s.heightMetres() / 2 + barhit::Below(s.chrome, s.grip, g_barHitScale)); }
 Mat BarOffset(const Screen &s) { return OnSurface(s, 0, BarY(s), 0.003); }
 
 // Put the bar, the curve button, and the corner tab under the screen (same parent: the
@@ -953,6 +955,11 @@ void PlaceChrome(Screen &s) {
     const double bar = s.chrome, button = s.grip;
     const auto offsets = ControlOffsets(s);
     vr::VROverlay()->SetOverlayWidthInMeters(s.bar, float(bar));
+    // Mouse scale sizes SteamVR's hit rectangle independently of the texture (MakeChrome).
+    // Width and the 256x24 visible pill stay unchanged. Both controller lasers and the
+    // 3D mouse's ComputeOverlayIntersection use this same enlarged target.
+    const vr::HmdVector2_t barScale = {{256.f, float(256 * barhit::Height(bar, g_barHitScale) / bar)}};
+    vr::VROverlay()->SetOverlayMouseScale(s.bar, &barScale);
     vr::VROverlay()->SetOverlayWidthInMeters(s.curveButton, float(button));
     vr::VROverlay()->SetOverlayWidthInMeters(s.rollButton, float(button));
     vr::VROverlay()->SetOverlayWidthInMeters(s.handle, float(HandleSize(s)));
@@ -2753,7 +2760,9 @@ void UpdateAim() {
         const double m = s.grip * (g_tick < s.aimUntil ? 2.0 : 0.25), h = s.heightMetres();
         // The panel and its controls: the bar row under it, the resize tab off its corner.
         const double halfW = std::max(s.metres / 2 + HandleSize(s), s.chrome / 2 + s.chrome * 0.12 + s.grip * 2) + m;
-        const double top = h / 2 + HandleSize(s) + m, bottom = std::min(BarY(s) - s.grip, -(h / 2 + HandleSize(s))) - m;
+        const double top = h / 2 + HandleSize(s) + m;
+        const double bottom = std::min(BarY(s) - std::max(s.grip, barhit::Height(s.chrome, g_barHitScale) / 2),
+                                       -(h / 2 + HandleSize(s))) - m;
         for (const Mat &l : lasers) {
             double u, v;
             if (!RayOnSurface(s, p, l, &u, &v)) continue;
@@ -5492,6 +5501,7 @@ bool ft_vr_init(void) {
     g_susanBring = handcut::Setting("SCREEN_SPIN_BRING", "1") != "0";
     g_pinMode = levelpin::ModeOf(handcut::Setting("SCREEN_PIN_LEVEL", "0").c_str());   // head pins: 1 level, 2 walking   // the lazy susan brings panels (0: the room turns)
     num("FLOAT_DOCK_DISTANCE", g_floatDockDistance, 0, 1);   // a floating window carried this near a screen docks onto it
+    num("GRAB_BAR_HIT_SCALE", g_barHitScale, barhit::kDefaultScale, barhit::kMaxScale);
     num("SCREEN_SPIN_DISTANCE", g_frontReading, 0.4, 3);   // the front slot's reading distance (m)...
     g_frontReading = std::max(g_frontReading, spotreserve::kDistance + spotreserve::kFrontGap);   // ...behind frunner's spot
     num("SCREEN_SPIN_PPD", g_frontRead.ppd, 8, 80);          // ...as big as its pixels at this many per degree need
@@ -7024,6 +7034,15 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
     int &rr = parsed.rr;
     switch (verb) {
     case vrcmd::HandSetting: {
+        if (!std::strcmp(key, "GRAB_BAR_HIT_SCALE")) {
+            double scale;
+            if (!ft_conf_number(word, &scale) || scale < barhit::kDefaultScale || scale > barhit::kMaxScale)
+                return (void)std::snprintf(reply, size, "error GRAB_BAR_HIT_SCALE must be 1..5");
+            g_barHitScale = scale;
+            for (auto &[i, s] : g_screens) PlaceChrome(s);
+            std::snprintf(reply, size, "ok %s %g", key, scale);
+            return;
+        }
         if (!std::strcmp(key, "SCREEN_PIN_LEVEL") && (!std::strcmp(word, "2") || !std::strcmp(word, "walk"))) {
             // the third head pin mode (Walk): 0 and 1 go the usual way below
             SetPinMode(levelpin::Walk);

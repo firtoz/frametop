@@ -1078,6 +1078,28 @@ Kirigami.ApplicationWindow {
                         }
                     }
 
+                    Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Window controls" }
+
+                    RowLayout {
+                        Kirigami.FormData.label: "Drag bar target height:"
+                        Controls.Slider {
+                            id: grabBarHitScale
+                            from: 1; to: 5; stepSize: 0.25
+                            value: backend.grabBarHitScale
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setGrabBarHitScale(value)
+                        }
+                        Controls.Label { text: grabBarHitScale.value.toFixed(2) + "×" }
+                    }
+                    Controls.Label {
+                        text: "Makes the invisible hover and click target taller for controller lasers and the 3D mouse. "
+                              + "The visible bar stays the same size. The controls move down when needed to keep the target "
+                              + "outside the window. Applies immediately to screens and floating windows; 1× is the original target."
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        Layout.maximumWidth: Kirigami.Units.gridUnit * 26
+                    }
+
                     Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Screens shown" }
 
                     // Counts as models, here and in Pinned screens: a new list rebuilds the rows, and
