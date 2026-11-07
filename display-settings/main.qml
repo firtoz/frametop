@@ -1084,17 +1084,109 @@ Kirigami.ApplicationWindow {
                         Kirigami.FormData.label: "Drag bar target height:"
                         Controls.Slider {
                             id: grabBarHitScale
-                            from: 1; to: 5; stepSize: 0.25
+                            from: 1; to: 15; stepSize: 0.25
                             value: backend.grabBarHitScale
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 12
                             onMoved: backend.setGrabBarHitScale(value)
                         }
                         Controls.Label { text: grabBarHitScale.value.toFixed(2) + "×" }
                     }
+                    RowLayout {
+                        Kirigami.FormData.label: "Drag bar target width:"
+                        Controls.Slider {
+                            id: grabBarHitWidth
+                            from: 1; to: 15; stepSize: 0.25
+                            value: backend.grabBarHitWidth
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setGrabBarHitWidth(value)
+                        }
+                        Controls.Label { text: grabBarHitWidth.value.toFixed(2) + "×" }
+                    }
+                    Controls.CheckBox {
+                        text: "Show drag zone"
+                        checked: backend.grabBarPreview
+                        onToggled: backend.setGrabBarPreview(checked)
+                    }
+                    Controls.CheckBox {
+                        text: "Keep drag zones visible while their windows are visible"
+                        enabled: backend.grabBarPreview
+                        checked: backend.grabBarPreviewAlways
+                        onToggled: backend.setGrabBarPreviewAlways(checked)
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Zone fill color:"
+                        enabled: backend.grabBarPreview
+                        Rectangle {
+                            width: Kirigami.Units.gridUnit * 2; height: Kirigami.Units.gridUnit
+                            color: backend.grabBarPreviewColor
+                            border.color: Kirigami.Theme.textColor
+                        }
+                        Controls.Button { text: "Choose…"; onClicked: barFillDialog.open() }
+                        ColorDialog {
+                            id: barFillDialog
+                            title: "Drag zone fill color"
+                            selectedColor: backend.grabBarPreviewColor
+                            onAccepted: backend.setGrabBarPreviewColor(selectedColor.toString())
+                        }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Fill opacity:"
+                        enabled: backend.grabBarPreview
+                        Controls.Slider {
+                            id: barFillOpacity
+                            from: 0; to: 1; stepSize: 0.01
+                            value: backend.grabBarPreviewOpacity
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setGrabBarPreviewOpacity(value)
+                        }
+                        Controls.Label { text: Math.round(barFillOpacity.value * 100) + "%" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline color:"
+                        enabled: backend.grabBarPreview
+                        Rectangle {
+                            width: Kirigami.Units.gridUnit * 2; height: Kirigami.Units.gridUnit
+                            color: backend.grabBarOutlineColor
+                            border.color: Kirigami.Theme.textColor
+                        }
+                        Controls.Button { text: "Choose…"; onClicked: barOutlineDialog.open() }
+                        ColorDialog {
+                            id: barOutlineDialog
+                            title: "Drag zone outline color"
+                            selectedColor: backend.grabBarOutlineColor
+                            onAccepted: backend.setGrabBarOutlineColor(selectedColor.toString())
+                        }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline opacity:"
+                        enabled: backend.grabBarPreview
+                        Controls.Slider {
+                            id: barOutlineOpacity
+                            from: 0; to: 1; stepSize: 0.01
+                            value: backend.grabBarOutlineOpacity
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setGrabBarOutlineOpacity(value)
+                        }
+                        Controls.Label { text: Math.round(barOutlineOpacity.value * 100) + "%" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Outline thickness:"
+                        enabled: backend.grabBarPreview
+                        Controls.Slider {
+                            id: barOutlineWidth
+                            from: 0; to: 8; stepSize: 1
+                            value: backend.grabBarOutlineWidth
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setGrabBarOutlineWidth(value)
+                        }
+                        Controls.Label { text: Math.round(barOutlineWidth.value) + " px" }
+                    }
                     Controls.Label {
-                        text: "Makes the invisible hover and click target taller for controller lasers and the 3D mouse. "
-                              + "The visible bar stays the same size. The controls move down when needed to keep the target "
-                              + "outside the window. Applies immediately to screens and floating windows; 1× is the original target."
+                        text: "Set the hover and click target's height and width separately, from 1× to 15×. "
+                              + "The visible pill stays the same size; the row moves down and its buttons move sideways "
+                              + "when needed to keep them outside the target. The preview follows the bars' normal fade, "
+                              + "unless kept visible. Settings apply immediately and are saved. Outline pixels are relative "
+                              + "to the original 256×24 pill texture; 0 hides the outline."
                         wrapMode: Text.Wrap
                         opacity: 0.7
                         Layout.maximumWidth: Kirigami.Units.gridUnit * 26

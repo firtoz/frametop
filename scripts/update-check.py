@@ -63,8 +63,9 @@ PACKAGES = {
                            "controller-laser clicks between a Frametop window and a native gamescope window "
                            "switch physical-keyboard typing without a mouse click (dashboard focus stack: "
                            "m_entryAtTopOfStack, m_bPanelVisible, m_bCanTakeKeyboardFocus); "
-                           "drag-bar GRAB_BAR_HIT_SCALE changes laser hit height without enlarging its visible "
-                           "texture, and the target stays below window content (SetOverlayMouseScale); "
+                           "drag-bar GRAB_BAR_HIT_SCALE and GRAB_BAR_HIT_WIDTH change laser hit dimensions "
+                           "without enlarging the pill; the preview matches the target and stays outside content "
+                           "and neighboring buttons (SetOverlayMouseScale, padded texture); "
                            "Full Keyboard (keyboard/) opens for a desktop text field over the screens with "
                            "the dashboard closed, in the dashboard, and in place of Steam's own keyboard in a "
                            "Steam field, and its lasers, controller tips and fingertips press keys",

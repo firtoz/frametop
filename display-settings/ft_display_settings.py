@@ -33,6 +33,7 @@ Launch with display-settings/ft-display-settings (host wrapper).
 import json
 import math
 import os
+import re
 import sys
 import threading
 import time
@@ -597,21 +598,102 @@ class Backend(QObject):
         if self._running:
             self._ask_screens(f"{'reveal' if shown else 'conceal'} {index + 1}", then=applied)
 
+    def _barNumber(self, key, default, lo, hi):
+        value = ft_conf.number(ft_layout.read_conf(), key, default)
+        if not lo <= value <= hi:
+            ft_conf.warn(f"frametop.conf: {key}={value:g} isn't from {lo:g} to {hi:g}; using {default:g}")
+            return default
+        return value
+
+    def _setBar(self, key, value):
+        write_conf_value(key, value)
+        if self._running and ft_layout.backend() == "screens":
+            self._ask_screens(f"handsetting {key} {value}")
+        self.changed.emit()
+
+    def _setBarNumber(self, key, value, default, lo, hi):
+        value = max(lo, min(hi, value)) if math.isfinite(value) else default
+        self._setBar(key, f"{value:g}")
+
+    def _barColor(self, key, default):
+        value = ft_layout.read_conf().get(key, default)
+        return value if re.fullmatch(r"#[0-9a-fA-F]{6}", value) else default
+
+    def _setBarColor(self, key, value):
+        if re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            self._setBar(key, value.lower())
+
     @Property(float, notify=changed)
     def grabBarHitScale(self):
-        scale = ft_conf.number(ft_layout.read_conf(), "GRAB_BAR_HIT_SCALE", 1.0)
-        if not 1.0 <= scale <= 5.0:
-            ft_conf.warn(f"frametop.conf: GRAB_BAR_HIT_SCALE={scale:g} isn't from 1 to 5; using 1")
-            return 1.0
-        return scale
+        return self._barNumber("GRAB_BAR_HIT_SCALE", 1.0, 1.0, 15.0)
 
     @Slot(float)
     def setGrabBarHitScale(self, scale):
-        scale = max(1.0, min(5.0, scale)) if math.isfinite(scale) else 1.0
-        write_conf_value("GRAB_BAR_HIT_SCALE", f"{scale:g}")
-        if self._running and ft_layout.backend() == "screens":
-            self._ask_screens(f"handsetting GRAB_BAR_HIT_SCALE {scale:g}")
-        self.changed.emit()
+        self._setBarNumber("GRAB_BAR_HIT_SCALE", scale, 1.0, 1.0, 15.0)
+
+    @Property(float, notify=changed)
+    def grabBarHitWidth(self):
+        return self._barNumber("GRAB_BAR_HIT_WIDTH", 1.0, 1.0, 15.0)
+
+    @Slot(float)
+    def setGrabBarHitWidth(self, scale):
+        self._setBarNumber("GRAB_BAR_HIT_WIDTH", scale, 1.0, 1.0, 15.0)
+
+    @Property(bool, notify=changed)
+    def grabBarPreview(self):
+        return ft_layout.read_conf().get("GRAB_BAR_PREVIEW", "0") == "1"
+
+    @Slot(bool)
+    def setGrabBarPreview(self, on):
+        self._setBar("GRAB_BAR_PREVIEW", "1" if on else "0")
+
+    @Property(bool, notify=changed)
+    def grabBarPreviewAlways(self):
+        return ft_layout.read_conf().get("GRAB_BAR_PREVIEW_ALWAYS", "0") == "1"
+
+    @Slot(bool)
+    def setGrabBarPreviewAlways(self, on):
+        self._setBar("GRAB_BAR_PREVIEW_ALWAYS", "1" if on else "0")
+
+    @Property(str, notify=changed)
+    def grabBarPreviewColor(self):
+        return self._barColor("GRAB_BAR_PREVIEW_COLOR", "#66bbff")
+
+    @Slot(str)
+    def setGrabBarPreviewColor(self, color):
+        self._setBarColor("GRAB_BAR_PREVIEW_COLOR", color)
+
+    @Property(str, notify=changed)
+    def grabBarOutlineColor(self):
+        return self._barColor("GRAB_BAR_OUTLINE_COLOR", "#99ddff")
+
+    @Slot(str)
+    def setGrabBarOutlineColor(self, color):
+        self._setBarColor("GRAB_BAR_OUTLINE_COLOR", color)
+
+    @Property(float, notify=changed)
+    def grabBarPreviewOpacity(self):
+        return self._barNumber("GRAB_BAR_PREVIEW_OPACITY", 0.12, 0.0, 1.0)
+
+    @Slot(float)
+    def setGrabBarPreviewOpacity(self, opacity):
+        self._setBarNumber("GRAB_BAR_PREVIEW_OPACITY", opacity, 0.12, 0.0, 1.0)
+
+    @Property(float, notify=changed)
+    def grabBarOutlineOpacity(self):
+        return self._barNumber("GRAB_BAR_OUTLINE_OPACITY", 0.7, 0.0, 1.0)
+
+    @Slot(float)
+    def setGrabBarOutlineOpacity(self, opacity):
+        self._setBarNumber("GRAB_BAR_OUTLINE_OPACITY", opacity, 0.7, 0.0, 1.0)
+
+    @Property(float, notify=changed)
+    def grabBarOutlineWidth(self):
+        return self._barNumber("GRAB_BAR_OUTLINE_WIDTH", 1.0, 0.0, 8.0)
+
+    @Slot(float)
+    def setGrabBarOutlineWidth(self, width):
+        self._setBarNumber("GRAB_BAR_OUTLINE_WIDTH", width, 1.0, 0.0, 8.0)
 
     # --- head pin modes (SCREEN_PIN_LEVEL; ft-screens takes it live, "handsetting") ---
     # 0 rides on the headset, 1 follows turning and walking but stays level, 2 (Walk) follows
