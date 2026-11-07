@@ -137,7 +137,8 @@ class GrabBar(unittest.TestCase):
         self.assertEqual(self.b.resizeCornerWidth, 3)
         self.assertEqual(self.b.resizeCornerOpacity, 0.9)
         self.assertEqual(self.b.resizeCornerGap, 2)
-        self.assertEqual(self.b.resizeCornerTarget, 12)
+        self.assertEqual(self.b.resizeCornerPadding, 1)
+        self.assertEqual(self.b.resizeCornerExclusion, 0.5)
         self.assertEqual(self.b.resizeCornerReach, 20)
         self.assertEqual(self.b.resizeCornerRoundness, 100)
         for prop, setter, key, value in (
@@ -147,7 +148,8 @@ class GrabBar(unittest.TestCase):
             ("resizeCornerWidth", "setResizeCornerWidth", "RESIZE_CORNER_WIDTH", 1.5),
             ("resizeCornerOpacity", "setResizeCornerOpacity", "RESIZE_CORNER_OPACITY", 0.8),
             ("resizeCornerGap", "setResizeCornerGap", "RESIZE_CORNER_GAP", 3.5),
-            ("resizeCornerTarget", "setResizeCornerTarget", "RESIZE_CORNER_TARGET", 16.5),
+            ("resizeCornerPadding", "setResizeCornerPadding", "RESIZE_CORNER_PADDING", 1.5),
+            ("resizeCornerExclusion", "setResizeCornerExclusion", "RESIZE_CORNER_EXCLUSION", 0.7),
             ("resizeCornerReach", "setResizeCornerReach", "RESIZE_CORNER_REACH", 25.5),
             ("resizeCornerHoverColor", "setResizeCornerHoverColor", "RESIZE_CORNER_HOVER_COLOR", "#00ffff"),
             ("resizeCornerRoundness", "setResizeCornerRoundness", "RESIZE_CORNER_ROUNDNESS", 50.5),
@@ -171,9 +173,11 @@ class GrabBar(unittest.TestCase):
             ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 3),
             ("setResizeCornerGap", "resizeCornerGap", -1, 0),
             ("setResizeCornerGap", "resizeCornerGap", 50, 10),
-            ("setResizeCornerTarget", "resizeCornerTarget", 0, 1),
+            ("setResizeCornerPadding", "resizeCornerPadding", 0, 0.1),
+            ("setResizeCornerExclusion", "resizeCornerExclusion", -1, 0),
+            ("setResizeCornerExclusion", "resizeCornerExclusion", 20, 5),
             ("setResizeCornerReach", "resizeCornerReach", 100, 50),
-            ("setResizeCornerTarget", "resizeCornerTarget", float("inf"), 12),
+            ("setResizeCornerPadding", "resizeCornerPadding", float("inf"), 1),
             ("setResizeCornerRoundness", "resizeCornerRoundness", -1, 0),
             ("setResizeCornerRoundness", "resizeCornerRoundness", 120, 100),
         ):
@@ -204,6 +208,11 @@ class GrabBar(unittest.TestCase):
         self.b.setResizeCornerPreview(False)
         self.assertEqual(self.b.resizeCornerAlways, [True] * 4)
         self.assertEqual(self.b.resizeCornerWidth, 4)
+
+    def test_old_square_size_is_not_misread_as_shape_padding(self):
+        Path(fds.CONF_PATH).write_text("RESIZE_CORNER_TARGET=50\n")
+        self.assertEqual(self.b.resizeCornerPadding, 1)
+        self.assertEqual(self.b.resizeCornerExclusion, 0.5)
 
 
 if __name__ == "__main__":

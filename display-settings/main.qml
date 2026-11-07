@@ -1248,7 +1248,6 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Outline arm length:"
-                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerLength
                             from: 1; to: 10; stepSize: 0.1
@@ -1260,7 +1259,6 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Outline thickness:"
-                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerWidth
                             from: 0.5; to: 6; stepSize: 0.1
@@ -1272,7 +1270,6 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Gap from window:"
-                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerGap
                             from: 0; to: 10; stepSize: 0.1
@@ -1284,7 +1281,6 @@ Kirigami.ApplicationWindow {
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Corner roundness:"
-                        enabled: backend.resizeCornerStyle !== "glow"
                         Controls.Slider {
                             id: resizeCornerRoundness
                             from: 0; to: 100; stepSize: 1
@@ -1295,15 +1291,26 @@ Kirigami.ApplicationWindow {
                         Controls.Label { text: Math.round(resizeCornerRoundness.value) + "%" }
                     }
                     RowLayout {
-                        Kirigami.FormData.label: "Laser hover target size:"
+                        Kirigami.FormData.label: "Hover padding around outline:"
                         Controls.Slider {
-                            id: resizeCornerTarget
-                            from: 1; to: 50; stepSize: 0.5
-                            value: backend.resizeCornerTarget
+                            id: resizeCornerPadding
+                            from: 0.1; to: 10; stepSize: 0.1
+                            value: backend.resizeCornerPadding
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 12
-                            onMoved: backend.setResizeCornerTarget(value)
+                            onMoved: backend.setResizeCornerPadding(value)
                         }
-                        Controls.Label { text: resizeCornerTarget.value.toFixed(1) + " cm" }
+                        Controls.Label { text: resizeCornerPadding.value.toFixed(1) + " cm" }
+                    }
+                    RowLayout {
+                        Kirigami.FormData.label: "Screen exclusion margin:"
+                        Controls.Slider {
+                            id: resizeCornerExclusion
+                            from: 0; to: 5; stepSize: 0.1
+                            value: backend.resizeCornerExclusion
+                            Layout.preferredWidth: Kirigami.Units.gridUnit * 12
+                            onMoved: backend.setResizeCornerExclusion(value)
+                        }
+                        Controls.Label { text: resizeCornerExclusion.value.toFixed(1) + " cm" }
                     }
                     RowLayout {
                         Kirigami.FormData.label: "Approach preview radius:"
@@ -1336,13 +1343,14 @@ Kirigami.ApplicationWindow {
                     Controls.Label {
                         text: "A crisp, rounded corner outside the panel, or the original soft glow. "
                               + "The indicator follows whichever of the four corners you approach. "
-                              + "The laser target is a square outside the chosen corner; its size is independent of the outline. "
-                              + "The approach radius shows a preview, but never shrinks below the target's diagonal. "
+                              + "The laser target follows the outline with padding, never a square. The window and its exclusion margin "
+                              + "cannot resize. The outline moves outward as needed to keep its whole padded target clear of that margin. "
+                              + "The approach radius only controls when feedback starts appearing. "
                               + "On the actual target, the outline changes color, thickens and becomes fully bright: ready to drag. "
                               + "Native-like uses gray then almost-white feedback, with 12% longer arms, 20% thicker lines "
                               + "and 3 mm extra gap on hover, without overwriting your custom colors. "
-                              + "Roundness runs from a square bend to a full round bend; dimensions affect outline styles only. "
-                              + "Hover growth/shrink and color changes animate over 180 ms. The preview draws the square target, "
+                              + "Roundness runs from a square bend to a full round bend; the soft glow follows the same safe corner path. "
+                              + "Hover growth/shrink and color changes animate over 180 ms inside a stable target. The preview draws the shaped target, "
                               + "not the approach radius. Always-show choices keep any combination of corners visible on visible panels; "
                               + "they do not bypass hiding, minimizing or pausing, or disable automatic feedback at other corners. "
                               + "Laser target size also applies to the 3D mouse; "

@@ -93,13 +93,55 @@ int main() {
         assert((resizecorner::Strength(true, always, 0, false) > 0) == always);
         assert(resizecorner::Strength(true, always, 0, true) == 1);
     }
-    const auto target = resizecorner::TargetTexture(64);
-    assert(target[3] > target[(32 * 64 + 32) * 4 + 3]);
+    const auto region = resizecorner::Target(style, 1, -1);
+    const auto target = resizecorner::TargetTexture(64, region);
+    for (int y = 0; y < 64; ++y) for (int x = 0; x < 64; ++x)
+        assert(bool(target[(y * 64 + x) * 4 + 3]) == overlayregion::Contains(region, (x + 0.5) / 64, 1 - (y + 0.5) / 64));
     assert(style.widthMm == 3);
     style.native = true;
     const double canvas = resizecorner::Canvas(style);
     const auto middle = resizecorner::Texture(n, canvas, 1, -1, style, 0.5);
     assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 0));
     assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 1));
+    // Every mask primitive is outside the screen plus its exclusion margin,
+    // including extreme padding, tight requested gaps and all orientations.
+    for (bool native : {false, true}) for (double gap : {0.0, 10.0})
+        for (double padding : {0.1, 1.0, 10.0}) for (double exclusion : {0.0, 0.5, 5.0})
+            for (double rounding : {0.0, 50.0, 100.0}) for (int sx : {-1, 1}) for (int sy : {-1, 1}) {
+                style.native = native, style.gapCm = gap, style.paddingCm = padding;
+                style.exclusionCm = exclusion, style.roundness = rounding;
+                const double size = resizecorner::Canvas(style);
+                const auto mask = resizecorner::Target(style, sx, sy);
+                assert(mask.size() == 32);
+                std::string key;
+                overlayregion::Region decoded;
+                assert(overlayregion::Encode("frametop.screen.1.resize", mask).size() < 4095);
+                assert(overlayregion::Decode(overlayregion::Encode("frametop.screen.1.resize", mask).c_str(), &key, &decoded));
+                for (const auto &p : mask) {
+                    double x = sx * (p.x - 0.5) * size, y = sy * (p.y - 0.5) * size;
+                    double clear;
+                    if (p.circle) clear = std::hypot(std::max(x, 0.0), std::max(y, 0.0)) - p.w * size;
+                    else {
+                        if (sx < 0) x -= p.w * size;
+                        if (sy < 0) y -= p.h * size;
+                        clear = std::hypot(std::max(x, 0.0), std::max(y, 0.0));
+                    }
+                    assert(clear >= exclusion / 100 - 1e-9);
+                }
+            }
+    // The stable target contains the full animated stroke, not merely its idle bend.
+    style = resizecorner::Style{};
+    style.paddingCm = 0.1, style.gapCm = 10;
+    for (bool native : {false, true}) for (double rounding : {0.0, 50.0, 100.0}) {
+        style.native = native, style.roundness = rounding;
+        const double size = resizecorner::Canvas(style);
+        const auto mask = resizecorner::Target(style, 1, -1);
+        for (double blend : {0.0, 0.25, 0.5, 0.75, 1.0}) {
+            const auto stroke = resizecorner::Texture(n, size, 1, -1, style, blend);
+            for (int y = 0; y < n; ++y) for (int x = 0; x < n; ++x)
+                if (stroke[(y * n + x) * 4 + 3] == 255)
+                    assert(overlayregion::Contains(mask, (x + 0.5) / n, 1 - (y + 0.5) / n));
+        }
+    }
     std::cout << "ok crisp corners: gap, AA, hover, native gray/white growth, roundness and clear canvas\n";
 }

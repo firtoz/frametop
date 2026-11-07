@@ -337,6 +337,11 @@ struct Screen {
     uint64_t barPaintedVersion = 0;
     bool barPaintedLit = false;
     barhit::Raster barPaintedRaster{};
+    uint64_t resizePaintedVersion = 0;
+    int resizePaintedX = 0, resizePaintedY = 0;
+    int64_t resizeAnnouncedMs = 0;
+    overlayregion::Region resizeRegion;
+    std::string resizeRegionMessage;
     bool pinLit = false;          // the pin button shows it pinned to the head (LightPin)
     const void *key = nullptr;    // the client buffer on it now, and its dmabuf (for cutouts)
     ft_dmabuf buf{};
@@ -920,10 +925,52 @@ Mat OnSurface(const Screen &s, double u, double v, double dz) {
 
 // (the row's middle: under the screen by a gap and the taller of the bar's half and a button's, so grown
 // buttons (a hand near: ChromeSize) don't overlap the screen; user, 2026-10-11)
-// The resize handle's side: wider than a button (user, 2026-10-13: "make the glow area a little bit wider
-// off the edge of the displays so it's easier to trigger"), all of it outside the corner. The laser's
-// corner glow is as wide (UpdateHandGuides).
-double HandleSize(const Screen &) { return g_resizeCorner.targetCm / 100; }
+// A canvas centered at the screen corner. Only its padded corner-stroke mask is
+// interactive; the window and its safety margin are excluded from every primitive.
+double HandleSize(const Screen &) { return resizecorner::Canvas(g_resizeCorner); }
+const overlayregion::Region &ResizeRegion(int sx, int sy) {
+    static std::array<overlayregion::Region, 4> regions;
+    static uint64_t version = 0;
+    if (version != g_resizeVersion) {
+        for (int c = 0; c < 4; ++c) regions[c] = resizecorner::Target(g_resizeCorner, c % 2 ? 1 : -1, c < 2 ? 1 : -1);
+        version = g_resizeVersion;
+    }
+    return regions[(sy < 0 ? 2 : 0) + (sx > 0 ? 1 : 0)];
+}
+void SendPointer(const std::string &msg);
+int64_t NowMs();
+void PaintResizeMask(Screen &s) {
+    if (s.handle == vr::k_ulOverlayHandleInvalid || (s.resizePaintedVersion == g_resizeVersion &&
+        s.resizePaintedX == s.cornerX && s.resizePaintedY == s.cornerY)) return;
+    const auto &region = ResizeRegion(s.cornerX, s.cornerY);
+    std::vector<vr::VROverlayIntersectionMaskPrimitive_t> mask;
+    for (const auto &p : region) {
+        vr::VROverlayIntersectionMaskPrimitive_t m{};
+        m.m_nPrimitiveType = p.circle ? vr::OverlayIntersectionPrimitiveType_Circle : vr::OverlayIntersectionPrimitiveType_Rectangle;
+        if (p.circle) m.m_Primitive.m_Circle = {float(p.x * 256), float(p.y * 256), float(p.w * 256)};
+        else m.m_Primitive.m_Rectangle = {float(p.x * 256), float(p.y * 256), float(p.w * 256), float(p.h * 256)};
+        mask.push_back(m);
+    }
+    const vr::HmdVector2_t scale = {{256, 256}};
+    vr::VROverlay()->SetOverlayMouseScale(s.handle, &scale);
+    const auto err = vr::VROverlay()->SetOverlayIntersectionMask(s.handle, mask.data(), uint32_t(mask.size()));
+    // Never enable a broad rectangular fallback over window content if masking fails.
+    vr::VROverlay()->SetOverlayInputMethod(s.handle, err == vr::VROverlayError_None ? vr::VROverlayInputMethod_Mouse : vr::VROverlayInputMethod_None);
+    if (err != vr::VROverlayError_None) {
+        std::fprintf(stderr, "resize mask: %s; resize target disabled\n", vr::VROverlay()->GetOverlayErrorNameFromEnum(err));
+        return;
+    }
+    s.resizeRegion = region;
+    char key[256];
+    vr::EVROverlayError keyError;
+    vr::VROverlay()->GetOverlayKey(s.handle, key, sizeof key, &keyError);
+    if (keyError == vr::VROverlayError_None) {
+        s.resizeRegionMessage = overlayregion::Encode(key, region);
+        SendPointer(s.resizeRegionMessage);
+        s.resizeAnnouncedMs = NowMs();
+    }
+    s.resizePaintedVersion = g_resizeVersion, s.resizePaintedX = s.cornerX, s.resizePaintedY = s.cornerY;
+}
 double BarY(const Screen &s) { return -(s.heightMetres() / 2 + barhit::Below(s.chrome, s.grip, g_barPaddingY)); }
 Mat BarOffset(const Screen &s) { return OnSurface(s, 0, BarY(s), 0.003); }
 
@@ -940,11 +987,10 @@ void ControlUV(const Screen &s, double u[8], double v[8]) {
     const double h = s.heightMetres(), bar = barhit::Width(s.chrome, g_barPaddingX), button = s.grip;
     const double gap = std::max(s.chrome * 0.06, button);
     const double uu[8] = {0, bar / 2 + gap + button / 2, bar / 2 + gap * 2 + button * 1.5,
-                          // The handle's inner corner is the screen's corner it's at (bottom right:
-                          // its top left corner on the screen's bottom right corner).
-                          s.cornerX * (s.metres / 2 + HandleSize(s) / 2), -(bar / 2 + gap + button / 2), -(bar / 2 + gap * 2 + button * 1.5),
+                           // Visual, preview and hit-mask canvases share the screen's actual corner.
+                           s.cornerX * s.metres / 2, -(bar / 2 + gap + button / 2), -(bar / 2 + gap * 2 + button * 1.5),
                           -(bar / 2 + gap + button / 2), -(bar / 2 + gap * 2 + button * 1.5)};
-    for (int k = 0; k < 8; ++k) u[k] = uu[k], v[k] = k == 3 ? s.cornerY * (h / 2 + HandleSize(s) / 2) : BarY(s);
+    for (int k = 0; k < 8; ++k) u[k] = uu[k], v[k] = k == 3 ? s.cornerY * h / 2 : BarY(s);
 }
 Mat RollZ(double rad);
 std::array<Mat, 8> ControlOffsets(const Screen &s) {
@@ -952,9 +998,8 @@ std::array<Mat, 8> ControlOffsets(const Screen &s) {
     ControlUV(s, u, v);
     std::array<Mat, 8> m;
     for (int k = 0; k < 8; ++k) m[k] = OnSurface(s, u[k], v[k], 0.003);
-    // the handle's texture is for the bottom right corner: turned for the others
-    const double turn = s.cornerX > 0 ? (s.cornerY < 0 ? 0 : M_PI / 2) : (s.cornerY < 0 ? -M_PI / 2 : M_PI);
-    if (turn != 0) m[3] = Mul(m[3], RollZ(turn));
+    // The handle's texture is clear; orientation lives in its mask, not the transform.
+    // The shaped mask already encodes the selected corner; do not rotate its canvas.
     return m;
 }
 
@@ -995,6 +1040,8 @@ void PlaceChrome(Screen &s) {
     vr::VROverlay()->SetOverlayWidthInMeters(s.curveButton, float(button));
     vr::VROverlay()->SetOverlayWidthInMeters(s.rollButton, float(button));
     vr::VROverlay()->SetOverlayWidthInMeters(s.handle, float(HandleSize(s)));
+    vr::VROverlay()->SetOverlayCurvature(s.handle, s.curve > 0 ? float(std::clamp(HandleSize(s) / (2 * M_PI * s.curve), 0.0, 1.0)) : 0.f);
+    PaintResizeMask(s);
     if (s.floating) {
         vr::VROverlay()->SetOverlayWidthInMeters(s.dockButton, float(button));
         vr::VROverlay()->SetOverlayWidthInMeters(s.closeButton, float(button));
@@ -1402,8 +1449,10 @@ void UpdateCorner(Screen &s, const Mat &p, const std::vector<Mat> &lasers) {
             if (!RayOnSurface(s, p, d, &u, &v)) continue;
             for (int x : {1, -1})
                 for (int y : {-1, 1}) {
-                    const double dist = std::hypot(u - x * W / 2, v - y * H / 2);
-                    const double close = 1 - std::clamp((dist - HandleSize(s)) / std::max(1e-3, zone - HandleSize(s)), 0.0, 1.0);
+                    const double du = u - x * W / 2, dv = v - y * H / 2;
+                    const double dist = std::hypot(du, dv), canvas = HandleSize(s);
+                    const bool on = overlayregion::Contains(ResizeRegion(x, y), 0.5 + du / canvas, 0.5 + dv / canvas);
+                    const double close = on ? 1 : 0.8 * (1 - std::clamp(dist / zone, 0.0, 1.0));
                     // (the corner it's at keeps it on a tie, so it doesn't flip between two)
                     if (close > best + (x == s.cornerX && y == s.cornerY ? -1e-3 : 1e-3)) best = close, cx = x, cy = y;
                 }
@@ -1459,6 +1508,10 @@ void UpdateControls() {
     for (auto &[i, s] : g_screens) {
         Mat p;
         if (s.visible && ScreenPose(s, &p)) {
+            if (!s.resizeRegionMessage.empty() && NowMs() - s.resizeAnnouncedMs > 2000) {
+                SendPointer(s.resizeRegionMessage);  // helper restart/lost datagram recovery
+                s.resizeAnnouncedMs = NowMs();
+            }
             // Points along the bar and at each button and the tab; a laser passing within
             // `reach` of one of them is close.
             std::vector<Mat> spots;
@@ -2443,6 +2496,7 @@ void UpdateCatcher() {
         for (auto o : parts) {
             vr::VROverlayIntersectionResults_t hit;
             if (o != vr::k_ulOverlayHandleInvalid && vr::VROverlay()->ComputeOverlayIntersection(o, &params, &hit)) {
+                if (o == s.handle && !overlayregion::Contains(s.resizeRegion, hit.vUVs.v[0], hit.vUVs.v[1])) continue;
                 g_press.distance = std::max(0.05, double(hit.fDistance));
                 ShowCatcher(false);
                 return;
@@ -3016,6 +3070,7 @@ handinput::Panel InputPanel(const Screen &s, int index, const Mat &p) {
                                                 handinput::Control::Reset, handinput::Control::Pin};
     for (int k = 0; k < 8; ++k) {
         if (controls[k] == vr::k_ulOverlayHandleInvalid) continue;
+        if (k == 3) continue;  // near-hand corners use GrabZone, not the laser's masked bounding canvas
         const double c = k == 3 ? HandleSize(s) : s.grip;
         const double hw = k == 0 ? s.chrome / 2 : c / 2, hh = k == 0 ? s.chrome * 12 / 256 : c / 2;
         P.controls.push_back({kinds[k], u[k], v[k], hw, hh});
@@ -5013,6 +5068,7 @@ struct ResizeVisual {
     double hover = 0, alpha = 0;
     int64_t lastMs = 0;
     uint64_t version = 0;
+    uint64_t targetVersion = 0;
     std::string key;
 };
 std::map<std::pair<int, int>, ResizeVisual> g_resizeVisuals;
@@ -5080,30 +5136,13 @@ void UpdateResizeVisuals() {
         const int step = int(std::lround(v.hover * 12));
         const double blend = resizecorner::Ease(step / 12.0);
         double wm = resizecorner::Canvas(g_resizeCorner);
-        const double halo = softglow::Width(HeadDistance(pose));
-        const double arm = std::clamp(0.25 * std::min(s.metres, s.heightMetres()), 0.03, 0.10);
-        if (!g_resizeCorner.sharp) wm = 2.1 * std::max(arm, std::max(halo, HandleSize(s)));
         std::string key = std::to_string(corner) + ":" + std::to_string(step);
-        if (!g_resizeCorner.sharp) key += ":" + std::to_string(int(halo / wm * 200)) + ":" + std::to_string(int(arm / wm * 200));
         if (v.version != g_resizeVersion || v.key != key) {
             auto t = textures.find(key);
             if (t == textures.end()) {
                 if (textures.size() >= 64) textures.clear();
                 std::vector<uint8_t> px;
-                if (g_resizeCorner.sharp) px = resizecorner::Texture(256, wm, sx, sy, g_resizeCorner, blend);
-                else {
-                    handinput::Guide g;
-                    g.kind = handinput::Guide::Corner, g.sx = sx, g.sy = sy;
-                    px = softglow::GuideTexture(g, 256, 256, wm, std::max(halo, HandleSize(s)), arm, 0, 1e9);
-                    for (size_t i = 0; i < px.size(); i += 4) {
-                        for (int c = 0; c < 3; ++c) {
-                            const int shift = 16 - 8 * c;
-                            px[i + c] = uint8_t(std::lround(((g_resizeCorner.color >> shift) & 255) * (1 - blend)
-                                                        + ((g_resizeCorner.hoverColor >> shift) & 255) * blend));
-                        }
-                        px[i + 3] = uint8_t(std::min(255.0, px[i + 3] * (1 + blend * 0.54)));
-                    }
-                }
+                px = resizecorner::Texture(256, wm, sx, sy, g_resizeCorner, blend);
                 t = textures.emplace(key, std::move(px)).first;
             }
             overlaytex::Set(v.outline, t->second.data(), 256, 256);
@@ -5116,12 +5155,16 @@ void UpdateResizeVisuals() {
         vr::VROverlay()->SetOverlayAlpha(v.outline, float(v.alpha * g_resizeCorner.opacity));
         if (!v.shown) vr::VROverlay()->ShowOverlay(v.outline), v.shown = true;
         if (g_resizeCorner.preview && make(v.target, ".target")) {
-            static const auto px = resizecorner::TargetTexture(64);
-            if (!v.targetShown) overlaytex::Set(v.target, px.data(), 64, 64);
+            if (v.targetVersion != g_resizeVersion) {
+                const auto px = resizecorner::TargetTexture(256, ResizeRegion(sx, sy));
+                overlaytex::Set(v.target, px.data(), 256, 256);
+                v.targetVersion = g_resizeVersion;
+            }
             const double side = HandleSize(s);
-            const Mat target = Mul(pose, OnSurface(s, sx * (s.metres / 2 + side / 2), sy * (s.heightMetres() / 2 + side / 2), 0.003));
+            const Mat target = m;
             vr::VROverlay()->SetOverlayTransformAbsolute(v.target, vr::TrackingUniverseStanding, &target);
             vr::VROverlay()->SetOverlayWidthInMeters(v.target, float(side));
+            vr::VROverlay()->SetOverlayCurvature(v.target, s.curve > 0 ? float(std::clamp(side / (2 * M_PI * s.curve), 0.0, 1.0)) : 0.f);
             vr::VROverlay()->SetOverlayAlpha(v.target, float(v.alpha));
             if (!v.targetShown) vr::VROverlay()->ShowOverlay(v.target), v.targetShown = true;
         } else if (v.targetShown) vr::VROverlay()->HideOverlay(v.target), v.targetShown = false;
@@ -5676,7 +5719,8 @@ bool ft_vr_init(void) {
     num("RESIZE_CORNER_LENGTH", g_resizeCorner.lengthCm, 1, 10);
     num("RESIZE_CORNER_WIDTH", g_resizeCorner.widthMm, 0.5, 6);
     num("RESIZE_CORNER_GAP", g_resizeCorner.gapCm, 0, 10);
-    num("RESIZE_CORNER_TARGET", g_resizeCorner.targetCm, 1, 50);
+    num("RESIZE_CORNER_PADDING", g_resizeCorner.paddingCm, 0.1, 10);
+    num("RESIZE_CORNER_EXCLUSION", g_resizeCorner.exclusionCm, 0, 5);
     num("RESIZE_CORNER_REACH", g_resizeCorner.reachCm, 1, 50);
     num("RESIZE_CORNER_ROUNDNESS", g_resizeCorner.roundness, 0, 100);
     g_resizeCorner.preview = handcut::Setting("RESIZE_CORNER_PREVIEW", "0") == "1";
@@ -6319,6 +6363,7 @@ bool MakePanel(Screen &s, const char *prefix, const char *label) {
     s.rollButton = chrome("roll", "roll", roll, 64, 64);
     vr::VROverlay()->SetOverlayFlag(s.rollButton, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
     s.handle = chrome("resize", "resize", corner, 64, 64);
+    s.resizePaintedVersion = 0;
     if (s.floating) vr::VROverlay()->SetOverlayFlag(s.handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);   // (its density)
     if (s.floating) {
         static const auto dock = DockTexture(64);
@@ -6765,6 +6810,11 @@ void ft_vr_poll(void (*handle)(const struct ft_event *, void *), void *data) {
         // The corner: resize. A floating window's: scroll for its density too (user, 2026-10-30): up,
         // its panel bigger at the same pixels, down, smaller (ft-floatd, 5% a notch); not while it's resized.
         while (vr::VROverlay()->PollNextOverlayEvent(s.handle, &ev, sizeof ev)) {
+            if ((ev.eventType == vr::VREvent_MouseMove || ev.eventType == vr::VREvent_MouseButtonDown) &&
+                !overlayregion::Contains(s.resizeRegion, ev.data.mouse.x / 256.0, ev.data.mouse.y / 256.0)) {
+                if (s.hover[3]) s.hover[3] = false, ApplyAlpha(s);
+                continue;
+            }
             hover(3);
             if (ev.eventType == vr::VREvent_MouseButtonDown && ev.data.mouse.button == vr::VRMouseButton_Left)
                 StartDrag(s, Drag::Resize, ev.trackedDeviceIndex);
@@ -7240,7 +7290,8 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
                 else if (name == "RESIZE_CORNER_LENGTH") setting = &g_resizeCorner.lengthCm, lo = 1, hi = 10;
                 else if (name == "RESIZE_CORNER_WIDTH") setting = &g_resizeCorner.widthMm, lo = 0.5, hi = 6;
                 else if (name == "RESIZE_CORNER_GAP") setting = &g_resizeCorner.gapCm, hi = 10;
-                else if (name == "RESIZE_CORNER_TARGET") setting = &g_resizeCorner.targetCm, lo = 1, hi = 50;
+                else if (name == "RESIZE_CORNER_PADDING") setting = &g_resizeCorner.paddingCm, lo = 0.1, hi = 10;
+                else if (name == "RESIZE_CORNER_EXCLUSION") setting = &g_resizeCorner.exclusionCm, hi = 5;
                 else if (name == "RESIZE_CORNER_REACH") setting = &g_resizeCorner.reachCm, lo = 1, hi = 50;
                 else if (name == "RESIZE_CORNER_ROUNDNESS") setting = &g_resizeCorner.roundness, hi = 100;
                 if (setting && value >= lo && value <= hi) *setting = value, valid = true;

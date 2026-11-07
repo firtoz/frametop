@@ -754,12 +754,20 @@ class Backend(QObject):
         self._setBarNumber("RESIZE_CORNER_GAP", cm, 2, 0, 10)
 
     @Property(float, notify=changed)
-    def resizeCornerTarget(self):
-        return self._barNumber("RESIZE_CORNER_TARGET", 12, 1, 50)
+    def resizeCornerPadding(self):
+        return self._barNumber("RESIZE_CORNER_PADDING", 1, 0.1, 10)
 
     @Slot(float)
-    def setResizeCornerTarget(self, cm):
-        self._setBarNumber("RESIZE_CORNER_TARGET", cm, 12, 1, 50)
+    def setResizeCornerPadding(self, cm):
+        self._setBarNumber("RESIZE_CORNER_PADDING", cm, 1, 0.1, 10)
+
+    @Property(float, notify=changed)
+    def resizeCornerExclusion(self):
+        return self._barNumber("RESIZE_CORNER_EXCLUSION", 0.5, 0, 5)
+
+    @Slot(float)
+    def setResizeCornerExclusion(self, cm):
+        self._setBarNumber("RESIZE_CORNER_EXCLUSION", cm, 0.5, 0, 5)
 
     @Property(float, notify=changed)
     def resizeCornerReach(self):

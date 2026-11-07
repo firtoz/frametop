@@ -66,6 +66,10 @@ PACKAGES = {
                            "drag-bar GRAB_BAR_PADDING_X and GRAB_BAR_PADDING_Y add centimetres to laser hit dimensions "
                            "without enlarging the pill; the preview matches the target and stays outside content "
                            "and neighboring buttons (SetOverlayMouseScale, padded texture); "
+                           "resize corners use shaped controller masks and pointer regions, never a bounding-box hit: "
+                           "both arms and bend drag, window content and RESIZE_CORNER_EXCLUSION do not; "
+                           "preview matches the region before/during hover growth on flat, curved and pinned panels "
+                           "(SetOverlayIntersectionMask, mouse/UV coordinates); "
                            "Full Keyboard (keyboard/) opens for a desktop text field over the screens with "
                            "the dashboard closed, in the dashboard, and in place of Steam's own keyboard in a "
                            "Steam field, and its lasers, controller tips and fingertips press keys",
