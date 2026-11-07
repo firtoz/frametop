@@ -1081,26 +1081,26 @@ Kirigami.ApplicationWindow {
                     Kirigami.Separator { Kirigami.FormData.isSection: true; Kirigami.FormData.label: "Window controls" }
 
                     RowLayout {
-                        Kirigami.FormData.label: "Drag bar target height:"
+                        Kirigami.FormData.label: "Vertical padding (each side):"
                         Controls.Slider {
-                            id: grabBarHitScale
-                            from: 1; to: 15; stepSize: 0.25
-                            value: backend.grabBarHitScale
+                            id: grabBarPaddingY
+                            from: 0; to: 50; stepSize: 0.1
+                            value: backend.grabBarPaddingY
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 12
-                            onMoved: backend.setGrabBarHitScale(value)
+                            onMoved: backend.setGrabBarPaddingY(value)
                         }
-                        Controls.Label { text: grabBarHitScale.value.toFixed(2) + "×" }
+                        Controls.Label { text: grabBarPaddingY.value.toFixed(1) + " cm" }
                     }
                     RowLayout {
-                        Kirigami.FormData.label: "Drag bar target width:"
+                        Kirigami.FormData.label: "Horizontal padding (each side):"
                         Controls.Slider {
-                            id: grabBarHitWidth
-                            from: 1; to: 15; stepSize: 0.25
-                            value: backend.grabBarHitWidth
+                            id: grabBarPaddingX
+                            from: 0; to: 50; stepSize: 0.1
+                            value: backend.grabBarPaddingX
                             Layout.preferredWidth: Kirigami.Units.gridUnit * 12
-                            onMoved: backend.setGrabBarHitWidth(value)
+                            onMoved: backend.setGrabBarPaddingX(value)
                         }
-                        Controls.Label { text: grabBarHitWidth.value.toFixed(2) + "×" }
+                        Controls.Label { text: grabBarPaddingX.value.toFixed(1) + " cm" }
                     }
                     Controls.CheckBox {
                         text: "Show drag zone"
@@ -1182,7 +1182,9 @@ Kirigami.ApplicationWindow {
                         Controls.Label { text: Math.round(barOutlineWidth.value) + " px" }
                     }
                     Controls.Label {
-                        text: "Set the hover and click target's height and width separately, from 1× to 15×. "
+                        text: "Add a fixed margin around the bar: horizontal padding on the left and right, "
+                              + "vertical padding above and below. For example, 2 cm adds 4 cm to that dimension; "
+                              + "0 cm is the original target. Padding stays the same physical size as the bar auto-sizes. "
                               + "The visible pill stays the same size; the row moves down and its buttons move sideways "
                               + "when needed to keep them outside the target. The preview follows the bars' normal fade, "
                               + "unless kept visible. Settings apply immediately and are saved. Outline pixels are relative "

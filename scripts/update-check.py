@@ -63,7 +63,7 @@ PACKAGES = {
                            "controller-laser clicks between a Frametop window and a native gamescope window "
                            "switch physical-keyboard typing without a mouse click (dashboard focus stack: "
                            "m_entryAtTopOfStack, m_bPanelVisible, m_bCanTakeKeyboardFocus); "
-                           "drag-bar GRAB_BAR_HIT_SCALE and GRAB_BAR_HIT_WIDTH change laser hit dimensions "
+                           "drag-bar GRAB_BAR_PADDING_X and GRAB_BAR_PADDING_Y add centimetres to laser hit dimensions "
                            "without enlarging the pill; the preview matches the target and stays outside content "
                            "and neighboring buttons (SetOverlayMouseScale, padded texture); "
                            "Full Keyboard (keyboard/) opens for a desktop text field over the screens with "

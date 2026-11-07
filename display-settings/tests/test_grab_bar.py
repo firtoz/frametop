@@ -22,7 +22,7 @@ class GrabBar(unittest.TestCase):
 
     def setUp(self):
         Path(fds.CONF_PATH).parent.mkdir(parents=True, exist_ok=True)
-        Path(fds.CONF_PATH).write_text("# keep this\nGRAB_BAR_HIT_SCALE=1 # keep this too\n")
+        Path(fds.CONF_PATH).write_text("# keep this\nGRAB_BAR_PADDING_Y=2 # keep this too\n")
         self.b = fds.Backend()
         self.b._running = True
         self.asked = []
@@ -32,52 +32,55 @@ class GrabBar(unittest.TestCase):
         self.addCleanup(self.backend.stop)
 
     def test_default_and_live_setting(self):
-        self.assertEqual(self.b.grabBarHitScale, 1)
-        for scale in (3, 2.75, 5, 15, 1):
-            self.b.setGrabBarHitScale(scale)
-            self.assertEqual(self.b.grabBarHitScale, scale)
-            self.assertEqual(self.asked[-1], f"handsetting GRAB_BAR_HIT_SCALE {scale:g}")
+        self.assertEqual(self.b.grabBarPaddingY, 2)
+        self.assertEqual(self.b.grabBarPaddingX, 2)
+        for cm in (3, 2.7, 5, 50, 0):
+            self.b.setGrabBarPaddingY(cm)
+            self.assertEqual(self.b.grabBarPaddingY, cm)
+            self.assertEqual(self.asked[-1], f"handsetting GRAB_BAR_PADDING_Y {cm:g}")
         text = Path(fds.CONF_PATH).read_text()
         self.assertIn("# keep this", text)
         self.assertIn("# keep this too", text)
 
     def test_bad_persisted_values_use_default(self):
-        for value in ("nan", "inf", "junk", "0", "16"):
-            Path(fds.CONF_PATH).write_text(f"GRAB_BAR_HIT_SCALE={value}\n")
-            self.assertEqual(self.b.grabBarHitScale, 1)
+        for value in ("nan", "inf", "junk", "-1", "51"):
+            Path(fds.CONF_PATH).write_text(f"GRAB_BAR_PADDING_Y={value}\n")
+            self.assertEqual(self.b.grabBarPaddingY, 2)
 
     def test_setter_bounds_and_nonfinite_values(self):
-        for value, want in ((0, 1), (20, 15), (float("nan"), 1), (float("inf"), 1)):
-            self.b.setGrabBarHitScale(value)
-            self.assertEqual(self.b.grabBarHitScale, want)
+        for value, want in ((-1, 0), (60, 50), (float("nan"), 2), (float("inf"), 2)):
+            self.b.setGrabBarPaddingY(value)
+            self.assertEqual(self.b.grabBarPaddingY, want)
 
     def test_saved_without_running_screens(self):
         self.b._running = False
-        self.b.setGrabBarHitScale(3)
-        self.assertEqual(self.b.grabBarHitScale, 3)
+        self.b.setGrabBarPaddingY(3)
+        self.assertEqual(self.b.grabBarPaddingY, 3)
         self.assertEqual(self.asked, [])
         self.b._running = True
         with patch.object(fds.ft_layout, "backend", return_value="gamescope"):
-            self.b.setGrabBarHitScale(2)
+            self.b.setGrabBarPaddingY(2)
         self.assertEqual(self.asked, [])
 
     def test_ui_exposes_the_setting(self):
         qml = (Path(fds.HERE) / "main.qml").read_text()
-        self.assertIn("value: backend.grabBarHitScale", qml)
-        self.assertIn("onMoved: backend.setGrabBarHitScale(value)", qml)
-        self.assertIn("onMoved: backend.setGrabBarHitWidth(value)", qml)
-        self.assertIn("from: 1; to: 15; stepSize: 0.25", qml)
+        self.assertIn("value: backend.grabBarPaddingY", qml)
+        self.assertIn("onMoved: backend.setGrabBarPaddingY(value)", qml)
+        self.assertIn("onMoved: backend.setGrabBarPaddingX(value)", qml)
+        self.assertIn("from: 0; to: 50; stepSize: 0.1", qml)
+        self.assertNotIn("grabBarHitScale", qml)
+        self.assertNotIn("grabBarHitWidth", qml)
         for setter in ("setGrabBarPreview", "setGrabBarPreviewAlways", "setGrabBarPreviewColor",
                        "setGrabBarOutlineColor", "setGrabBarPreviewOpacity", "setGrabBarOutlineOpacity",
                        "setGrabBarOutlineWidth"):
             self.assertIn(f"backend.{setter}(", qml)
 
-    def test_axes_are_independent_and_reach_fifteen(self):
-        self.b.setGrabBarHitScale(15)
-        self.b.setGrabBarHitWidth(2.5)
-        self.assertEqual(self.b.grabBarHitScale, 15)
-        self.assertEqual(self.b.grabBarHitWidth, 2.5)
-        self.assertEqual(self.asked[-1], "handsetting GRAB_BAR_HIT_WIDTH 2.5")
+    def test_axes_are_independent_in_centimetres(self):
+        self.b.setGrabBarPaddingY(50)
+        self.b.setGrabBarPaddingX(2.5)
+        self.assertEqual(self.b.grabBarPaddingY, 50)
+        self.assertEqual(self.b.grabBarPaddingX, 2.5)
+        self.assertEqual(self.asked[-1], "handsetting GRAB_BAR_PADDING_X 2.5")
 
     def test_preview_switches_and_style_are_saved_and_sent(self):
         for prop, setter, key, value in (

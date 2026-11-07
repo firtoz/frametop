@@ -10,8 +10,8 @@ REMOTE=0           # 1 = serve the desktop's primary screen over VNC on the tail
 FLOAT_SLOTS=16     # screens backend: how many windows can float in VR at once (spare outputs; 0 turns it off; restart the desktop after a change)
 FLOAT_MARGIN=300   # floating windows: pixels around each window on its output, so menus have room past its edges
 FLOAT_DOCK_DISTANCE=0.10   # floating windows: carried this near a screen (m), one lights up and the window docks onto it when let go (0: off)
-GRAB_BAR_HIT_SCALE=1       # drag bars: laser/3D mouse target height, 1..15 times the visible pill; Display Settings > Visibility & pins, applies live
-GRAB_BAR_HIT_WIDTH=1       # independent horizontal target multiplier, 1..15; the visible pill stays the same size
+GRAB_BAR_PADDING_X=2      # drag bars: centimetres added to EACH left/right edge, 0..50; Display Settings > Visibility & pins, applies live
+GRAB_BAR_PADDING_Y=2      # centimetres added to EACH top/bottom edge, 0..50; 0 is the original target, no multipliers
 GRAB_BAR_PREVIEW=0         # show the draggable rectangle whenever its bar is visible
 GRAB_BAR_PREVIEW_ALWAYS=0  # keep bars and their zones visible while their panels are visible; other buttons still fade (never through pause or hidden panels)
 GRAB_BAR_PREVIEW_COLOR='#66bbff' # zone fill, #RRGGBB (quoted for the config grammar)

@@ -3,22 +3,36 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <vector>
 
 namespace barhit {
-constexpr double kDefaultScale = 1, kMaxScale = 15;
+constexpr double kDefaultPaddingCm = 2, kMaxPaddingCm = 50;
 constexpr double kAspect = 24.0 / 256;
 
-inline double Scale(double scale) {
-    return std::isfinite(scale) ? std::clamp(scale, kDefaultScale, kMaxScale) : kDefaultScale;
+inline double Padding(double cm) {
+    return std::isfinite(cm) ? std::clamp(cm, 0.0, kMaxPaddingCm) : kDefaultPaddingCm;
 }
-inline double Height(double width, double scale) { return width * kAspect * Scale(scale); }
-inline double Width(double width, double scale) { return width * Scale(scale); }
-inline double Below(double width, double button, double scale) {
-    return width * 0.06 + std::max(Height(width, scale) / 2, button / 2);
+inline double Height(double width, double cm) { return width * kAspect + 2 * Padding(cm) / 100; }
+inline double Width(double width, double cm) { return width + 2 * Padding(cm) / 100; }
+inline double Below(double width, double button, double cm) {
+    return width * 0.06 + std::max(Height(width, cm) / 2, button / 2);
+}
+
+// Constant physical padding needs a different raster for each pill size. Bound the
+// canvas on both axes, even for a tiny nearby pill and maximum padding. Equal raster
+// keys share the same image; small pose changes need no texture regeneration.
+using Raster = std::array<int, 4>;  // canvas width/height, pill width/height
+inline Raster Pixels(double width, double xCm, double yCm) {
+    width = std::max(0.001, width);
+    const double density = std::min(256 / width, 1022 / std::max(Width(width, xCm), Height(width, yCm)));
+    const int w = std::max(1, int(std::lround(width * density)));
+    const int h = std::max(1, int(std::lround(width * kAspect * density)));
+    return {w + 2 * int(std::lround(Padding(xCm) / 100 * density)),
+            h + 2 * int(std::lround(Padding(yCm) / 100 * density)), w, h};
 }
 
 struct Style {
@@ -51,13 +65,12 @@ inline void Over(uint8_t *dst, const uint8_t *src) {
     dst[3] = uint8_t(std::lround(total * 255));
 }
 
-inline Image Render(double widthScale, double heightScale, const Style &style, const std::vector<uint8_t> &pill) {
+inline Image Render(const Raster &raster, const Style &style, const std::vector<uint8_t> &pill) {
     Image im;
-    im.width = int(std::lround(256 * Scale(widthScale)));
-    im.height = int(std::lround(24 * Scale(heightScale)));
+    im.width = raster[0], im.height = raster[1];
     im.pixels.resize(size_t(im.width) * im.height * 4, 0);
     if (style.enabled) {
-        const int line = int(std::lround(std::clamp(style.outlineWidth, 0.0, 8.0)));
+        const int line = style.outlineWidth > 0 ? std::max(1, int(std::lround(std::clamp(style.outlineWidth, 0.0, 8.0) * raster[2] / 256))) : 0;
         for (int y = 0; y < im.height; ++y)
             for (int x = 0; x < im.width; ++x) {
                 const bool edge = x < line || y < line || x >= im.width - line || y >= im.height - line;
@@ -67,10 +80,13 @@ inline Image Render(double widthScale, double heightScale, const Style &style, c
                 p[3] = uint8_t(std::lround(std::clamp(edge ? style.outlineOpacity : style.opacity, 0.0, 1.0) * 255));
             }
     }
-    const int dx = (im.width - 256) / 2, dy = (im.height - 24) / 2;
-    for (int y = 0; y < 24; ++y)
-        for (int x = 0; x < 256; ++x)
-            Over(&im.pixels[(size_t(y + dy) * im.width + x + dx) * 4], &pill[(size_t(y) * 256 + x) * 4]);
+    const int dx = (im.width - raster[2]) / 2, dy = (im.height - raster[3]) / 2;
+    for (int y = 0; y < raster[3]; ++y)
+        for (int x = 0; x < raster[2]; ++x) {
+            const int sx = std::min(255, int((x + 0.5) * 256 / raster[2]));
+            const int sy = std::min(23, int((y + 0.5) * 24 / raster[3]));
+            Over(&im.pixels[(size_t(y + dy) * im.width + x + dx) * 4], &pill[(size_t(sy) * 256 + sx) * 4]);
+        }
     return im;
 }
 }  // namespace barhit

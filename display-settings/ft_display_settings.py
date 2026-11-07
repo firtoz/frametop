@@ -624,20 +624,20 @@ class Backend(QObject):
             self._setBar(key, value.lower())
 
     @Property(float, notify=changed)
-    def grabBarHitScale(self):
-        return self._barNumber("GRAB_BAR_HIT_SCALE", 1.0, 1.0, 15.0)
+    def grabBarPaddingY(self):
+        return self._barNumber("GRAB_BAR_PADDING_Y", 2.0, 0.0, 50.0)
 
     @Slot(float)
-    def setGrabBarHitScale(self, scale):
-        self._setBarNumber("GRAB_BAR_HIT_SCALE", scale, 1.0, 1.0, 15.0)
+    def setGrabBarPaddingY(self, cm):
+        self._setBarNumber("GRAB_BAR_PADDING_Y", cm, 2.0, 0.0, 50.0)
 
     @Property(float, notify=changed)
-    def grabBarHitWidth(self):
-        return self._barNumber("GRAB_BAR_HIT_WIDTH", 1.0, 1.0, 15.0)
+    def grabBarPaddingX(self):
+        return self._barNumber("GRAB_BAR_PADDING_X", 2.0, 0.0, 50.0)
 
     @Slot(float)
-    def setGrabBarHitWidth(self, scale):
-        self._setBarNumber("GRAB_BAR_HIT_WIDTH", scale, 1.0, 1.0, 15.0)
+    def setGrabBarPaddingX(self, cm):
+        self._setBarNumber("GRAB_BAR_PADDING_X", cm, 2.0, 0.0, 50.0)
 
     @Property(bool, notify=changed)
     def grabBarPreview(self):
