@@ -1,5 +1,8 @@
 # Floating windows
 
+Experimental [Steam PIN protection](steam-pin-lock.md) can hide the desktop and
+floating windows without ending apps while Steam is locked or its state is unknown.
+
 ## Native dashboard launch exceptions
 
 With `DASHBOARD_APPS=frametop`, apps picked from SteamVR's **+ / Launch a program** menu normally open as Frametop windows. `DASHBOARD_NATIVE_APPS='konsole'` keeps Konsole on SteamVR's native launch path instead; a space-separated list such as `'konsole kate'` supports several apps. Entries match exact executable basenames (including absolute executable paths and simple `env NAME=value` wrappers), not text in arguments. The default list is empty. Changes apply to the next dashboard launch; existing windows are not moved. Apps started within Frametop itself are unaffected.
