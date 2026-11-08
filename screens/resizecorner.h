@@ -4,9 +4,23 @@
 #include <cmath>
 #include <cstdint>
 #include <vector>
+#include <string_view>
 #include "../pointer/common/overlayregion.h"
+#include "hoverhaptics.h"
 
 namespace resizecorner {
+inline bool Color(std::string_view text, uint32_t *out) {
+    if (text.size() != 7 || text[0] != '#') return false;
+    uint32_t value = 0;
+    for (char c : text.substr(1)) {
+        const int digit = c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+                          c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+        if (digit < 0) return false;
+        value = value * 16 + unsigned(digit);
+    }
+    *out = value;
+    return true;
+}
 struct Style {
     bool sharp = true, native = true;
     uint32_t color = 0xf6f9ff, hoverColor = 0x66ddff;
@@ -17,16 +31,7 @@ struct Style {
     bool always[4] = {false, false, false, true};  // top left, top right, bottom left, bottom right
 };
 
-struct HoverBuzz {
-    int device = -1;
-    bool Enter(int source, bool physicalController, bool enabled) {
-        if (!physicalController) { device = -1; return false; }
-        const bool pulse = enabled && source != device;
-        device = source;
-        return pulse;
-    }
-    void Leave(int source = -1) { if (source < 0 || source == device) device = -1; }
-};
+using HoverBuzz = hoverhaptics::Gate;
 
 // Original behavior is intentionally independent of all new appearance/target settings.
 inline double LegacySize(double grip) { return grip * 1.8; }

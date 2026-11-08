@@ -7,7 +7,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | Customization | Upstream contribution |
 | --- | --- |
 | Keyboard focus follows controller selection of native windows | [Frametop/frametop #87](https://github.com/Frametop/frametop/pull/87) |
-| Configurable drag-zone padding, preview and styling | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
+| Configurable drag-zone padding, preview, styling and hover haptics | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
 | Crisp, configurable resize-corner feedback | Local development; no upstream PR yet |
 | Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
 
@@ -18,6 +18,10 @@ After typing in a Frametop window, selecting a native SteamOS window with a cont
 The fix reuses the dashboard focus-stack reader, without intercepting controller buttons. It was manually tested by switching typing between a Frametop text field and native Konsole with the controller alone. See [PR #87](https://github.com/Frametop/frametop/pull/87) for implementation and validation details.
 
 ## Configurable drag zones
+
+The move bar also has optional, default-on hover haptics (`GRAB_BAR_HAPTICS`): one pulse per actual physical-controller hover entry/source change, never the other controller or virtual pointer. This follow-up belongs to the drag-zone contribution in [PR #92](https://github.com/Frametop/frametop/pull/92), independently of the resize-corner contribution.
+
+The haptic follow-up is published at `aa92235`; its ARM64 image builds, 38 relevant checkout tests and changed-file Ruff pass, and available C/C++ checks pass with dependency-related hand/gaze skips. It has not yet been activated or wearer-tested on hardware.
 
 **Frametop Display Settings → Visibility & pins → Window controls** provides:
 
@@ -45,6 +49,16 @@ Actual VR drag-zone preview, cropped from the headset view:
 Only these two wearer-reviewed crops are published. The uncropped capture stays in ignored local artifacts; screenshot review is required before publishing new captures, which may include private windows or room imagery.
 
 ## Crisp resize corners
+
+The wearer tested the final defaults, shaped target, controller-mask correction and resize haptics and approved the result. The two exact native-size crops below are approved for publication; full captures remain private. See [Resize corners](resize-corners.md) for the current settings guide. The older installation notes below record development history, not outstanding wearer-review requests.
+
+Idle:
+
+![Idle resize corner](images/resize-idle.png)
+
+Actual controller hover:
+
+![Hovered resize corner](images/resize-hover.png)
 
 Original/defaults/haptics follow-up: **Soft glow (original behavior)** now restores the unchanged original glow renderer, automatic proximity fade and square hover target, near-hand tab and pointer-edge behavior; it ignores new appearance, shape, exclusion and persistent-corner settings without erasing them. New defaults match the wearer's saved setup: SteamOS-like, bottom-right always visible, 27% opacity, 4.7 cm arms, 5.1 mm thickness, 3.1 cm gap, 2.4 cm hover padding, preview off. Optional hover haptics default on and gate a short pulse to the physical controller identified by the actual hover event, never the other controller or virtual pointer. Both source builds, all 43 relevant Python tests and changed-file Ruff pass; the full C/C++ recipe passes available checks, with dependency-related ncnn/gaze skips as above. Installed from source at `cc5ff72` with wearer-approved desktop and pointer-service restarts; both running binaries match the builds. SteamVR was not restarted. Wearer validation remains pending, including whether the hardware pulse feels right.
 

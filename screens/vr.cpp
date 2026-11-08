@@ -343,6 +343,7 @@ struct Screen {
     overlayregion::Region resizeRegion;
     std::string resizeRegionMessage;
     resizecorner::HoverBuzz resizeBuzz;
+    hoverhaptics::Gate barBuzz;
     bool pinLit = false;          // the pin button shows it pinned to the head (LightPin)
     const void *key = nullptr;    // the client buffer on it now, and its dmabuf (for cutouts)
     ft_dmabuf buf{};
@@ -1518,7 +1519,7 @@ void UpdateControls() {
     g_laserCorner = g_laserCornerNext, g_laserCornerNext = {};   // (last tick's: UpdateCorner fills the next)
     for (auto &[i, s] : g_screens) {
         Mat p;
-        if (!s.visible) s.resizeBuzz.Leave();
+        if (!s.visible) s.resizeBuzz.Leave(), s.barBuzz.Leave();
         if (s.visible && ScreenPose(s, &p)) {
             if (!s.resizeRegionMessage.empty() && NowMs() - s.resizeAnnouncedMs > 2000) {
                 SendPointer(s.resizeRegionMessage);  // helper restart/lost datagram recovery
@@ -5730,6 +5731,7 @@ bool ft_vr_init(void) {
     num("GRAB_BAR_PADDING_Y", g_barPaddingY, 0, barhit::kMaxPaddingCm);
     g_barPreview.enabled = handcut::Setting("GRAB_BAR_PREVIEW", "0") == "1";
     g_barPreview.always = handcut::Setting("GRAB_BAR_PREVIEW_ALWAYS", "0") == "1";
+    g_barPreview.haptics = handcut::Setting("GRAB_BAR_HAPTICS", "1") == "1";
     num("GRAB_BAR_PREVIEW_OPACITY", g_barPreview.opacity, 0, 1);
     num("GRAB_BAR_OUTLINE_OPACITY", g_barPreview.outlineOpacity, 0, 1);
     num("GRAB_BAR_OUTLINE_WIDTH", g_barPreview.outlineWidth, 0, 8);
@@ -5754,7 +5756,7 @@ bool ft_vr_init(void) {
                        std::pair{"RESIZE_CORNER_COLOR", &g_resizeCorner.color},
                        std::pair{"RESIZE_CORNER_HOVER_COLOR", &g_resizeCorner.hoverColor}}) {
         const auto value = handcut::Setting(entry.first, "");
-        if (!value.empty() && !barhit::Color(value.c_str(), entry.second))
+        if (!value.empty() && !resizecorner::Color(value.c_str(), entry.second))
             std::fprintf(stderr, "frametop.conf: %s must be #RRGGBB; using the default\n", entry.first);
     }
     num("SCREEN_SPIN_DISTANCE", g_frontReading, 0.4, 3);   // the front slot's reading distance (m)...
@@ -6818,6 +6820,11 @@ void ft_vr_poll(void (*handle)(const struct ft_event *, void *), void *data) {
         };
         // The bar: move (and push/pull with the wheel while moving).
         while (vr::VROverlay()->PollNextOverlayEvent(s.bar, &ev, sizeof ev)) {
+            if (ev.eventType == vr::VREvent_FocusLeave) s.barBuzz.Leave(int(ev.trackedDeviceIndex));
+            if (ev.eventType == vr::VREvent_FocusEnter || ev.eventType == vr::VREvent_MouseMove || ev.eventType == vr::VREvent_MouseButtonDown) {
+                if (s.barBuzz.Enter(int(ev.trackedDeviceIndex), IsHandController(ev.trackedDeviceIndex), g_barPreview.haptics) && s.drag == Drag::None)
+                    vr::VRSystem()->TriggerHapticPulse(ev.trackedDeviceIndex, 0, 1500);
+            }
             hover(0);
             if ((ev.eventType == vr::VREvent_MouseButtonDown || ev.eventType == vr::VREvent_MouseButtonUp) && CarryClick(ev))
                 continue;
@@ -7312,8 +7319,8 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
             double value;
             if (name == "RESIZE_CORNER_STYLE" && (!std::strcmp(word, "sharp") || !std::strcmp(word, "glow") || !std::strcmp(word, "native")))
                 g_resizeCorner.sharp = std::strcmp(word, "glow") != 0, g_resizeCorner.native = !std::strcmp(word, "native"), valid = true;
-            else if (name == "RESIZE_CORNER_COLOR") valid = barhit::Color(word, &g_resizeCorner.color);
-            else if (name == "RESIZE_CORNER_HOVER_COLOR") valid = barhit::Color(word, &g_resizeCorner.hoverColor);
+            else if (name == "RESIZE_CORNER_COLOR") valid = resizecorner::Color(word, &g_resizeCorner.color);
+            else if (name == "RESIZE_CORNER_HOVER_COLOR") valid = resizecorner::Color(word, &g_resizeCorner.hoverColor);
             else if (ft_conf_number(word, &value)) {
                 double *setting = nullptr, lo = 0, hi = 1;
                 if (name == "RESIZE_CORNER_OPACITY") setting = &g_resizeCorner.opacity;
@@ -7354,6 +7361,7 @@ static void HelperWordCommand(vrcmd::Verb verb, vrcmd::Cmd &parsed, const char *
                 if (setting && value >= lo && value <= hi) *setting = value, valid = true;
                 else if ((value == 0 || value == 1) && name == "GRAB_BAR_PREVIEW") g_barPreview.enabled = value != 0, valid = true;
                 else if ((value == 0 || value == 1) && name == "GRAB_BAR_PREVIEW_ALWAYS") g_barPreview.always = value != 0, valid = true;
+                else if ((value == 0 || value == 1) && name == "GRAB_BAR_HAPTICS") g_barPreview.haptics = value != 0, valid = true;
             }
             if (!valid) return (void)std::snprintf(reply, size, "error invalid drag-bar setting");
             ++g_barVersion;

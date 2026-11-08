@@ -8,6 +8,8 @@ This selects the window/session, not a Linux distribution. Frametop's nested KWi
 
 ## Resize corners
 
+See [Resize corners](resize-corners.md) for the dedicated guide and approved idle/hover headset screenshots.
+
 ### Defaults and original mode
 
 The default is **SteamOS-like**, with **only bottom-right always shown**, preview off, **27% opacity**, **4.7 cm arms**, **5.1 mm thickness**, **3.1 cm requested gap**, and **2.4 cm hover padding**. Roundness remains 100%, screen exclusion 0.5 cm, and approach radius 20 cm. Existing saved choices take precedence.
@@ -31,6 +33,8 @@ In **Display Settings → Visibility & pins → Resize corners**, choose **Sharp
 Changes apply live and persist as `RESIZE_CORNER_STYLE` (`sharp`/`native`/`glow`), `RESIZE_CORNER_COLOR` (`#f6f9ff`), `RESIZE_CORNER_OPACITY` (0.27), `RESIZE_CORNER_LENGTH` (cm), `RESIZE_CORNER_WIDTH` (mm), `RESIZE_CORNER_GAP` (cm), `RESIZE_CORNER_PADDING` (cm), `RESIZE_CORNER_EXCLUSION` (cm), `RESIZE_CORNER_REACH` (cm), `RESIZE_CORNER_HOVER_COLOR` (`#66ddff`), `RESIZE_CORNER_PREVIEW` (0/1), `RESIZE_CORNER_HAPTICS` (0/1), and `RESIZE_CORNER_ALWAYS_TL`, `RESIZE_CORNER_ALWAYS_TR`, `RESIZE_CORNER_ALWAYS_BL`, `RESIZE_CORNER_ALWAYS_BR` (each 0/1). The obsolete square-size key `RESIZE_CORNER_TARGET` is ignored rather than being interpreted as padding. In modern styles, zero opacity hides the indicator without disabling resizing; the diagnostic target preview has its own checkbox. Saved thickness values remain intact. Edge, button and touch feedback are unchanged.
 
 ## Drag zones
+
+**Hover haptics (move bar, controller lasers only)** gives one short buzz on entering the actual move-bar target, only to the physical controller whose laser enters. It defaults on (`GRAB_BAR_HAPTICS=1`) and is independent of the drag-zone preview; mouse/gaze/near-hand hover never buzzes a controller.
 
 The drag bar below a screen or floating window can have a larger laser target. In **Frametop Display Settings → Visibility & pins → Window controls**, set **Vertical padding** and **Horizontal padding** independently in centimetres, from 0 to 50 cm per side (default: 2 cm). For example, 2 cm horizontal padding adds 2 cm on the left and right: the target is 4 cm wider than the visible pill. Zero padding gives the original target. These apply immediately to controller lasers and the 3D mouse, and are saved as `GRAB_BAR_PADDING_Y` and `GRAB_BAR_PADDING_X` in `~/.config/frametop.conf`. Padding stays the same physical size as the visible pill auto-sizes with distance and window width; there is no multiplier mode. The row moves down and neighboring buttons move sideways as needed so the target cannot cover window content or those buttons. Near-hand grab margins remain separate.
 

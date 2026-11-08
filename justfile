@@ -53,6 +53,8 @@ test-c:
     run screens/tests/barhit-test.cpp build/tests/barhit-test
     g++ -std=c++17 -Wall -Wextra -Werror screens/tests/resizecorner-test.cpp -o build/tests/resizecorner-test
     run screens/tests/resizecorner-test.cpp build/tests/resizecorner-test
+    g++ -std=c++17 -Wall -Wextra -Werror pointer/tests/overlayregion-test.cpp -o build/tests/overlayregion-test
+    run pointer/tests/overlayregion-test.cpp build/tests/overlayregion-test
     gcc -std=c11 -Wall -Wextra -Werror -I. screens/tests/controller-click-test.c \
       -lm -o build/tests/controller-click-test
     run screens/tests/controller-click-test.c build/tests/controller-click-test

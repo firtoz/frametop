@@ -66,6 +66,7 @@ PACKAGES = {
                            "drag-bar GRAB_BAR_PADDING_X and GRAB_BAR_PADDING_Y add centimetres to laser hit dimensions "
                            "without enlarging the pill; the preview matches the target and stays outside content "
                            "and neighboring buttons (SetOverlayMouseScale, padded texture); "
+                           "move-bar hover haptics buzz only the physical controller whose laser enters, never the other hand or virtual pointer; "
                            "resize corners use shaped controller masks and pointer regions, never a bounding-box hit: "
                            "both arms and bend drag, window content and RESIZE_CORNER_EXCLUSION do not; "
                            "preview matches the region before/during hover growth on flat, curved and pinned panels "
