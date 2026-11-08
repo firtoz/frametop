@@ -10,7 +10,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | Configurable drag-zone padding, preview, styling and hover haptics | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
 | Crisp, configurable resize-corner feedback and hover haptics | [Frametop/frametop #94](https://github.com/Frametop/frametop/pull/94) |
 | Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
-| App-preserving Steam PIN access protection | Isolated `feat/steam-pin-lock`; PR on hold for wearer validation and coordinated follow-up work |
+| App-preserving Steam PIN access protection | Isolated `feat/steam-pin-lock`; separate draft PR pending final build/publication |
 
 ## Controller-selected native windows get keyboard focus
 
@@ -89,7 +89,7 @@ Replaces Frametop's diffuse corner halo with a sharp, antialiased rounded outlin
 
 Experimental, opt-in `STEAM_PIN_LOCK=1` keeps Frametop's desktop, floating windows and input inaccessible when Steam's six-digit PIN is active or the observer's evidence is unknown/stale. Apps and unsaved work remain running. The independent lease expires after 750 ms and detects suspend. The observer is strictly passive: Steam alone locks, unlocks and presents its PIN UI. A restarted observer stays denied until it observes a genuine Steam lock/unlock cycle rather than trusting an absent prompt or requesting authentication. Protected mode requires the screens backend and disables remote serving and notification forwarding for the whole session. Audio and background jobs continue. This protects the locked-headset interface, not against malicious same-user software. See [Steam PIN protection](steam-pin-lock.md) for limitations and validation requirements.
 
-The clean contribution starts at `4b4fa17` on `feat/steam-pin-lock`, based on clean upstream `main`. Its full ARM64 image build passed. Two real Steam PIN cycles validated detection. The gate now has 30 offline tests, including deterministic guard-loop scheduling/suspend/slow-response checks added in `1527d7b`; targeted container tests and available native checks pass, with baseline/input-fixture limitations documented in the guide. The personal integration also builds and passes its resize/drag/PIN native checks, 68 targeted Python tests (one container-only documentation skip), and the initial 28 host-side gate/documentation tests without skips. The expanded host-side gate/documentation/session/installer group passes 73 tests.
+The clean contribution starts at `4b4fa17` on `feat/steam-pin-lock`, based on clean upstream `main`. Full ARM64 image builds passed before the passive-observer revision; the final passive build is being checked separately before publication. Two real Steam PIN cycles initially validated detection. The gate now has 35 offline tests, including deterministic guard-loop scheduling/suspend/slow-response and strictly passive recovery checks; the expanded host-side gate/documentation/session/installer group passes 78 tests. Available native checks and the personal integration's resize/drag/PIN checks passed, with baseline/input-fixture limitations documented in the guide.
 
 Installed integrated commit `355089b` from the source checkout using its own build scripts, with `STEAM_PIN_LOCK=1` and the guard unit installed through the shared installer helper. The wearer approved the one-time desktop/input/keyboard restart; SteamVR remained running. The live compositor and keyboard hashes matched the new builds. The guard reported locked, then unlocked after the wearer authenticated; readbacks reported the desktop screen and controls visible. The initially missing screen was behind the wearer at its saved position; bringing screen 1 in front resolved that without a restart.
 
@@ -99,7 +99,11 @@ The subsequent floating-window cycle exposed repeated PIN prompts in the initial
 
 A later passive cycle verified Full Keyboard and floating KWrite were visible beforehand, then all Frametop panels were hidden while denied. The wearer confirmed the desktop and floating window returned after unlock; Full Keyboard stayed dismissed, which the wearer accepted. Reopening and typing afterward has not yet been explicitly verified. Sequential gate/overlay queries are not an atomic latency measurement.
 
-**Publication hold:** the wearer asked to keep this work local so another agent can build VNC streaming on top before a PR is created. Do not push or create the PIN PR yet. Protected mode currently refuses remote capture/serving for the entire session; streaming follow-up must explicitly secure those independent outputs and inputs, not merely remove that restriction. Keep the clean contribution separate from fork-only customizations.
+### Remote-desktop architecture divergence
+
+The personal setup will use a separate project to manage VNC hosting, clients, authentication and connections rather than build that experiment into Frametop. This is an architectural direction, not a newly implemented VNC stack in this fork. The Steam PIN contribution remains independent and contains no experiment-specific integration or configuration.
+
+The earlier publication hold has been lifted: publish the isolated PIN work as a separate draft PR, with its remaining validation gaps documented. Protected mode still refuses Frametop's built-in remote capture/serving for the whole session. An external server capturing this desktop must independently block capture and input while locked; moving it to another project does not make the VR gate protect its stream. Keep any future project-specific integration and this divergence note out of the upstream PIN branch.
 
 ## Branch workflow
 
