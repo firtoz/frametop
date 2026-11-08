@@ -10,6 +10,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | Configurable drag-zone padding, preview, styling and hover haptics | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
 | Crisp, configurable resize-corner feedback and hover haptics | [Frametop/frametop #94](https://github.com/Frametop/frametop/pull/94) |
 | Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
+| App-preserving Steam PIN access protection | Isolated `feat/steam-pin-lock`; upstream PR pending enforcement/headset validation |
 
 ## Controller-selected native windows get keyboard focus
 
@@ -22,6 +23,8 @@ The fix reuses the dashboard focus-stack reader, without intercepting controller
 The move bar also has optional, default-on hover haptics (`GRAB_BAR_HAPTICS`): one pulse per actual physical-controller hover entry/source change, never the other controller or virtual pointer. This follow-up belongs to the drag-zone contribution in [PR #92](https://github.com/Frametop/frametop/pull/92), independently of the resize-corner contribution.
 
 The haptic follow-up is published at `aa92235`; its ARM64 image builds, 38 relevant checkout tests and changed-file Ruff pass, and available C/C++ checks pass with dependency-related hand/gaze skips. It has not yet been activated or wearer-tested on hardware.
+
+Later wearer validation: installed the move-bar haptic follow-up with an approved Frametop desktop restart; the wearer confirmed it works well. SteamVR remained running.
 
 **Frametop Display Settings → Visibility & pins → Window controls** provides:
 
@@ -82,7 +85,15 @@ Replaces Frametop's diffuse corner halo with a sharp, antialiased rounded outlin
 
 `DASHBOARD_NATIVE_APPS='konsole'` leaves Konsole picked from SteamVR's **+** menu on SteamVR's original/native launch path even while other dashboard apps route into Frametop. It changes where new windows open, not their distribution: Konsole in Frametop already runs on the SteamOS host, not Fedora. The setting is checked per launch, matches exact executable basenames and preserves other apps' routing. Tests cover executable paths, simple environment wrappers, argument false positives, multiple exceptions and preserving the original command line. Existing windows are not moved. See [Floating windows](floating-windows.md) for configuration details.
 
+## Steam PIN access protection
+
+Experimental, opt-in `STEAM_PIN_LOCK=1` keeps Frametop's desktop, floating windows and input inaccessible when Steam's six-digit PIN is active or the observer's evidence is unknown/stale. Apps and unsaved work remain running. The independent lease expires after 750 ms and detects suspend; a restarted observer asks Steam for real authentication rather than trusting an absent prompt. Protected mode requires the screens backend and disables remote serving and notification forwarding for the whole session. Audio and background jobs continue. This protects the locked-headset interface, not against malicious same-user software. See [Steam PIN protection](steam-pin-lock.md) for limitations and validation requirements.
+
+The clean contribution is `4b4fa17` on `feat/steam-pin-lock`, based on clean upstream `main`. Its full ARM64 image build passed. Two real Steam PIN cycles validated detection. The new gate has 26 offline tests; targeted container tests and available native checks pass, with baseline/input-fixture limitations documented in the guide. The personal integration also builds and passes its resize/drag/PIN native checks, 68 targeted Python tests (one container-only documentation skip), and 28 host-side gate/documentation tests without skips. Enforcement has not yet been installed or wearer-tested; no claim of a complete security audit or instantaneous locking is made. An upstream PR is pending that testing.
+
 ## Branch workflow
+
+Steam PIN work is being validated in a separate integration worktree so testing retains the fork's resize controls, drag-bar changes and native-dashboard routing. The clean upstream branch contains none of those unrelated customizations.
 
 - **`origin`** points to `firtoz/frametop`; it is the default push destination.
 - **`main`** integrates the personal customizations and this log. Never submit it wholesale to upstream.
