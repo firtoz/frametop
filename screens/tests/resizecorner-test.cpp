@@ -113,6 +113,14 @@ int main() {
                 const double size = resizecorner::Canvas(style);
                 const auto mask = resizecorner::Target(style, sx, sy);
                 assert(mask.size() == 32);
+                overlayregion::Region controllerMask;
+                for (const auto &primitive : mask) controllerMask.push_back(overlayregion::TopLeft(primitive));
+                // The actual controller mask must match the preview after API-space conversion,
+                // not just agree with the pointer helper in the original UV coordinate system.
+                for (int py = 0; py < 17; ++py) for (int px = 0; px < 17; ++px) {
+                    const double u = (px + 0.37) / 17, v = (py + 0.23) / 17;
+                    assert(overlayregion::Contains(mask, u, v) == overlayregion::Contains(controllerMask, u, 1 - v));
+                }
                 std::string key;
                 overlayregion::Region decoded;
                 assert(overlayregion::Encode("frametop.screen.1.resize", mask).size() < 4095);

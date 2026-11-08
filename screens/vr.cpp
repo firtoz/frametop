@@ -638,7 +638,7 @@ bool DiscRim(double u, double v) { return u * u + v * v > 0.86 * 0.86; }
 // indicator (UpdateHandGuides: the laser's guide, as a hand's) shows it. Resize corners now default
 // to a crisp outline; the original glow remains selectable in Display Settings.
 const std::vector<uint8_t> &HandleTexture(bool) {
-    static const std::vector<uint8_t> clear(64 * 64 * 4, 0);
+    static const std::vector<uint8_t> clear(256 * 256 * 4, 0);
     return clear;
 }
 
@@ -945,10 +945,11 @@ void PaintResizeMask(Screen &s) {
     const auto &region = ResizeRegion(s.cornerX, s.cornerY);
     std::vector<vr::VROverlayIntersectionMaskPrimitive_t> mask;
     for (const auto &p : region) {
+        const auto image = overlayregion::TopLeft(p);
         vr::VROverlayIntersectionMaskPrimitive_t m{};
         m.m_nPrimitiveType = p.circle ? vr::OverlayIntersectionPrimitiveType_Circle : vr::OverlayIntersectionPrimitiveType_Rectangle;
-        if (p.circle) m.m_Primitive.m_Circle = {float(p.x * 256), float(p.y * 256), float(p.w * 256)};
-        else m.m_Primitive.m_Rectangle = {float(p.x * 256), float(p.y * 256), float(p.w * 256), float(p.h * 256)};
+        if (p.circle) m.m_Primitive.m_Circle = {float(image.x * 256), float(image.y * 256), float(image.w * 256)};
+        else m.m_Primitive.m_Rectangle = {float(image.x * 256), float(image.y * 256), float(image.w * 256), float(image.h * 256)};
         mask.push_back(m);
     }
     const vr::HmdVector2_t scale = {{256, 256}};
@@ -1486,7 +1487,7 @@ void UpdateCorner(Screen &s, const Mat &p, const std::vector<Mat> &lasers) {
     if (lit != s.cornerLit && s.handle != vr::k_ulOverlayHandleInvalid) {
         s.cornerLit = lit;
         const auto &px = HandleTexture(lit);
-        overlaytex::Set(s.handle, px.data(), 64, 64);
+        overlaytex::Set(s.handle, px.data(), 256, 256);
     }
     if (std::fabs(glow - s.cornerGlow) > 0.02f || (glow == 0) != (s.cornerGlow == 0)) {
         s.cornerGlow = glow;
@@ -6362,7 +6363,7 @@ bool MakePanel(Screen &s, const char *prefix, const char *label) {
     s.curveButton = chrome("curve", "curve", curve, 64, 64);
     s.rollButton = chrome("roll", "roll", roll, 64, 64);
     vr::VROverlay()->SetOverlayFlag(s.rollButton, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
-    s.handle = chrome("resize", "resize", corner, 64, 64);
+    s.handle = chrome("resize", "resize", corner, 256, 256);
     s.resizePaintedVersion = 0;
     if (s.floating) vr::VROverlay()->SetOverlayFlag(s.handle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);   // (its density)
     if (s.floating) {
