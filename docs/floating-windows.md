@@ -1,5 +1,11 @@
 # Floating windows
 
+## Native dashboard launch exceptions
+
+With `DASHBOARD_APPS=frametop`, apps picked from SteamVR's **+ / Launch a program** menu normally open as Frametop windows. `DASHBOARD_NATIVE_APPS='konsole'` keeps Konsole on SteamVR's native launch path instead; a space-separated list such as `'konsole kate'` supports several apps. Entries match exact executable basenames (including absolute executable paths and simple `env NAME=value` wrappers), not text in arguments. The default list is empty. Changes apply to the next dashboard launch; existing windows are not moved. Apps started within Frametop itself are unaffected.
+
+This selects the window/session, not a Linux distribution. Frametop's nested KWin/Plasma session and its Konsole normally run on the SteamOS host. Fedora is the separate Distrobox environment used by Frametop components and build tools; a terminal enters it only when explicitly launched there or configured to do so. Native SteamVR windows do not depend on Frametop's desktop compositor.
+
 ## Resize corners
 
 The optional **Native-like (gray → white)** style approximates SteamVR's feedback: gray while approaching, almost white when actually hovered/held, with 12% longer arms, a 20% thicker stroke and 3 mm extra clearance. Hover animation does not move the hit area or overwrite custom colors; switch back to Sharp outline to use those colors. **Corner roundness** runs from 0% (square bend) to 100% (fully rounded); saved as `RESIZE_CORNER_ROUNDNESS` (default 100). Native-like is saved as `RESIZE_CORNER_STYLE=native`. This is Frametop's own rendering, not SteamVR's native control.

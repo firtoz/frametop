@@ -36,6 +36,7 @@ RESIZE_CORNER_ALWAYS_TR=0         # keep top-right feedback visible; each corner
 RESIZE_CORNER_ALWAYS_BL=0         # keep bottom-left feedback visible
 RESIZE_CORNER_ALWAYS_BR=0         # keep bottom-right feedback visible; automatic approach feedback still works at other corners
 DASHBOARD_APPS=steamvr # apps from the SteamVR dashboard's Launch a program list: steamvr = SteamVR windows | frametop = Frametop floating windows (SteamVR's when the desktop isn't running, Frametop is paused, or every floating window is in use; applies at once)
+DASHBOARD_NATIVE_APPS='' # exact executable basenames kept in SteamVR even with DASHBOARD_APPS=frametop; e.g. 'konsole kate'; applies on the next launch
 NOTIFY_FORWARD=auto # the desktop's notifications go to the Steam session's notification server (e.g. VR toasts), Plasma's popups off: auto = unless that's SteamOS's steam_notif_daemon | on | off (restart the desktop after a change)
 FIREFOX_TITLEBAR=kwin # Firefox in the desktop: kwin = KWin's title bar, with Frametop's float button | firefox = its own, tabs in the title bar (restart the desktop after a change)
 AUTOSTART=0        # 1 = the desktop starts whenever SteamVR does, so at boot too (frametop-autostart.service; Start with SteamVR on Display Settings' Power tab)

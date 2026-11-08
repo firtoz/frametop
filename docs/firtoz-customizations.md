@@ -9,6 +9,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | Keyboard focus follows controller selection of native windows | [Frametop/frametop #87](https://github.com/Frametop/frametop/pull/87) |
 | Configurable drag-zone padding, preview and styling | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
 | Crisp, configurable resize-corner feedback | Local development; no upstream PR yet |
+| Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
 
 ## Controller-selected native windows get keyboard focus
 
@@ -54,6 +55,10 @@ An additional **Native-like** style offers gray-to-almost-white hover feedback, 
 Follow-up: the sharp outline defaults to a 2 cm clear gap. Gap, actual laser hover-target size and approach-preview radius are independently configurable. Actual hover/drag uses a distinct configurable color, full configured opacity and a 60% thicker sharp outline, rather than only the approach fade. Native controls and near-hand reach remain unchanged. Rendering checks include gap clearance at 0/2/10 cm and distinct hover styling; the screens build and all 39 relevant settings/documentation tests pass. Installed from source at `c3906b6`, with the wearer's approval to restart only the Frametop desktop; the running binary matches the build. Visual wearer review remains pending.
 
 Replaces Frametop's diffuse corner halo with a sharp, antialiased rounded outline. The indicator still follows any of the four corners; the resize interaction is unchanged. **Display Settings → Visibility & pins → Resize corners** offers sharp/original-glow styles, color, opacity, and sharp-outline arm length and thickness. See [Floating windows](floating-windows.md) for keys and defaults. The screens component builds; rendering checks cover all four orientations, extreme dimensions, antialiasing and a clear panel interior. All 39 relevant settings/documentation tests and changed-file Ruff pass. Local screenshot evidence stays private pending review; headset validation is pending.
+
+## Native Konsole from the dashboard
+
+`DASHBOARD_NATIVE_APPS='konsole'` leaves Konsole picked from SteamVR's **+** menu on SteamVR's original/native launch path even while other dashboard apps route into Frametop. It changes where new windows open, not their distribution: Konsole in Frametop already runs on the SteamOS host, not Fedora. The setting is checked per launch, matches exact executable basenames and preserves other apps' routing. Tests cover executable paths, simple environment wrappers, argument false positives, multiple exceptions and preserving the original command line. Existing windows are not moved. See [Floating windows](floating-windows.md) for configuration details.
 
 ## Branch workflow
 

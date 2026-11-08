@@ -26,6 +26,7 @@ import json
 import os
 import re
 import select
+import shlex
 import signal
 import socket
 import sys
@@ -139,12 +140,32 @@ def inject(cdp):
 
 
 def route(cdp, cmdline):
+    if native_app(cmdline):
+        log("SteamVR window: configured native app")
+        cdp.evaluate(f"window.__ftDashRoute.original.call(SteamClient.Apps, {json.dumps(cmdline)})")
+        return
     reply = ask_floatd(cmdline)
     if reply.startswith("ok"):
         log(f"floating: {cmdline}")
         return
     log(f"SteamVR window: {cmdline} ({reply.removeprefix('steamvr ').strip()})")
     cdp.evaluate(f"window.__ftDashRoute.original.call(SteamClient.Apps, {json.dumps(cmdline)})")
+
+
+def native_app(cmdline):
+    """Exact executable-name exceptions; never match arguments or interpret shell commands."""
+    try:
+        argv = shlex.split(cmdline)
+    except ValueError:
+        return False
+    if argv and os.path.basename(argv[0]) == "env":
+        argv = argv[1:]
+        while argv and re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*=.*", argv[0], re.DOTALL):
+            argv = argv[1:]
+        if argv and argv[0] == "--":
+            argv = argv[1:]
+    names = ft_layout.read_conf().get("DASHBOARD_NATIVE_APPS", "").split()
+    return bool(argv) and os.path.basename(argv[0]) in names
 
 
 def session(url):
