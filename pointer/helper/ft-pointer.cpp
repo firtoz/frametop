@@ -4193,10 +4193,14 @@ void Pointer::FindTarget(bool dragging, const Vec3 &dir, Pass &t) {
     t.scene = first.scene;
     Vec3 bestPoint = first.point, bestNormal = first.normal;
     t.onEdge = false;
+    const auto edgeRegion = hitRegions.find(edgeKey);
+    const bool shapedResizeEdge = edgeKey.rfind("frametop.", 0) == 0 && edgeKey.size() >= 7 &&
+        edgeKey.compare(edgeKey.size() - 7, 7, ".resize") == 0 &&
+        (edgeRegion == hitRegions.end() || !overlayregion::FullRectangle(edgeRegion->second));
     if (!dragging && t.best < 1e8 && !t.scene) {
         edgeKey = t.key, edgePoint = bestPoint, edgeNormal = Normalize(bestNormal), edgeLast = bestPoint;
     } else if (!dragging && t.best >= 1e8 && !edgeKey.empty() &&
-               !(edgeKey.rfind("frametop.", 0) == 0 && edgeKey.size() >= 7 && edgeKey.compare(edgeKey.size() - 7, 7, ".resize") == 0) && visible.count(edgeKey) &&
+               !shapedResizeEdge && visible.count(edgeKey) &&
                visible.at(edgeKey)) {
         // Just off a panel: stay on its plane (see "Panel edges" at the top).
         const double denom = Dot(dir, edgeNormal);

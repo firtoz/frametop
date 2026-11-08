@@ -8,13 +8,33 @@
 
 namespace resizecorner {
 struct Style {
-    bool sharp = true, native = false;
+    bool sharp = true, native = true;
     uint32_t color = 0xf6f9ff, hoverColor = 0x66ddff;
-    double opacity = 0.9, lengthCm = 4, widthMm = 3, gapCm = 2;
-    double paddingCm = 1, exclusionCm = 0.5, reachCm = 20, roundness = 100;
+    double opacity = 0.27, lengthCm = 4.7, widthMm = 5.1, gapCm = 3.1;
+    double paddingCm = 2.4, exclusionCm = 0.5, reachCm = 20, roundness = 100;
     bool preview = false;
-    bool always[4] = {};  // top left, top right, bottom left, bottom right
+    bool haptics = true;
+    bool always[4] = {false, false, false, true};  // top left, top right, bottom left, bottom right
 };
+
+struct HoverBuzz {
+    int device = -1;
+    bool Enter(int source, bool physicalController, bool enabled) {
+        if (!physicalController) { device = -1; return false; }
+        const bool pulse = enabled && source != device;
+        device = source;
+        return pulse;
+    }
+    void Leave(int source = -1) { if (source < 0 || source == device) device = -1; }
+};
+
+// Original behavior is intentionally independent of all new appearance/target settings.
+inline double LegacySize(double grip) { return grip * 1.8; }
+inline double LegacyZone(double width, double height) { return std::clamp(0.2 * std::min(width, height), 0.05, 0.2); }
+inline double LegacyCloseness(double distance, double grip, double width, double height) {
+    const double size = LegacySize(grip), zone = LegacyZone(width, height);
+    return 1 - std::clamp((distance - size) / std::max(1e-3, zone - size), 0.0, 1.0);
+}
 
 inline double Animate(double value, bool ready, double dt) {
     const double step = std::clamp(dt, 0.0, 0.1) / 0.18;

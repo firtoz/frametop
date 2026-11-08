@@ -5,6 +5,7 @@
 int main() {
     constexpr int n = 256;
     resizecorner::Style style;
+    style.native = false;  // custom-color assertions below exercise the sharp custom style
     for (double length : {1.0, 4.0, 10.0})
         for (double width : {0.5, 2.0, 6.0}) {
             style.lengthCm = length, style.widthMm = width, style.color = 0x12abef;
@@ -97,12 +98,36 @@ int main() {
     const auto target = resizecorner::TargetTexture(64, region);
     for (int y = 0; y < 64; ++y) for (int x = 0; x < 64; ++x)
         assert(bool(target[(y * 64 + x) * 4 + 3]) == overlayregion::Contains(region, (x + 0.5) / 64, 1 - (y + 0.5) / 64));
-    assert(style.widthMm == 3);
+    assert(style.widthMm == 5.1);
     style.native = true;
     const double canvas = resizecorner::Canvas(style);
     const auto middle = resizecorner::Texture(n, canvas, 1, -1, style, 0.5);
     assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 0));
     assert(middle != resizecorner::Texture(n, canvas, 1, -1, style, 1));
+    const resizecorner::Style defaults;
+    assert(defaults.native && defaults.sharp && defaults.haptics && !defaults.preview);
+    assert(defaults.always[3] && !defaults.always[0] && !defaults.always[1] && !defaults.always[2]);
+    assert(defaults.widthMm == 5.1 && defaults.lengthCm == 4.7 && defaults.opacity == 0.27);
+    assert(defaults.gapCm == 3.1 && defaults.paddingCm == 2.4);
+    assert(std::fabs(resizecorner::LegacySize(0.04) - 0.072) < 1e-12);
+    assert(resizecorner::LegacyZone(2, 1) == 0.2);
+    assert(resizecorner::LegacyZone(0.01, 0.02) == 0.05);
+    assert(resizecorner::LegacyCloseness(0.072, 0.04, 2, 1) == 1);
+    assert(resizecorner::LegacyCloseness(0.2, 0.04, 2, 1) == 0);
+    assert(std::fabs(resizecorner::LegacyCloseness(0.136, 0.04, 2, 1) - 0.5) < 1e-12);
+    resizecorner::HoverBuzz buzz;
+    assert(buzz.Enter(2, true, true));  // only controller 2 is the requested pulse recipient
+    assert(buzz.device == 2 && !buzz.Enter(2, true, true));
+    assert(buzz.Enter(1, true, true));  // switch to the left controller, not a broadcast
+    buzz.Leave(2);                    // stale right leave must not retrigger the left
+    assert(!buzz.Enter(1, true, true));
+    buzz.Leave(1);
+    assert(buzz.Enter(1, true, true));
+    assert(!buzz.Enter(3, false, true));  // virtual pointer/gaze: never buzz
+    assert(!buzz.Enter(2, true, false));  // disabled: no haptics
+    assert(!buzz.Enter(2, true, true));   // enabling while hovered doesn't spam a pulse
+    buzz.Leave();
+    assert(buzz.Enter(2, true, true));
     // Every mask primitive is outside the screen plus its exclusion margin,
     // including extreme padding, tight requested gaps and all orientations.
     for (bool native : {false, true}) for (double gap : {0.0, 10.0})

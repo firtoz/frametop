@@ -131,13 +131,13 @@ class GrabBar(unittest.TestCase):
         self.app.processEvents()
 
     def test_resize_corner_defaults_and_live_settings(self):
-        self.assertEqual(self.b.resizeCornerStyle, "sharp")
+        self.assertEqual(self.b.resizeCornerStyle, "native")
         self.assertEqual(self.b.resizeCornerColor, "#f6f9ff")
-        self.assertEqual(self.b.resizeCornerLength, 4)
-        self.assertEqual(self.b.resizeCornerWidth, 3)
-        self.assertEqual(self.b.resizeCornerOpacity, 0.9)
-        self.assertEqual(self.b.resizeCornerGap, 2)
-        self.assertEqual(self.b.resizeCornerPadding, 1)
+        self.assertEqual(self.b.resizeCornerLength, 4.7)
+        self.assertEqual(self.b.resizeCornerWidth, 5.1)
+        self.assertEqual(self.b.resizeCornerOpacity, 0.27)
+        self.assertEqual(self.b.resizeCornerGap, 3.1)
+        self.assertEqual(self.b.resizeCornerPadding, 2.4)
         self.assertEqual(self.b.resizeCornerExclusion, 0.5)
         self.assertEqual(self.b.resizeCornerReach, 20)
         self.assertEqual(self.b.resizeCornerRoundness, 100)
@@ -170,26 +170,26 @@ class GrabBar(unittest.TestCase):
             ("setResizeCornerWidth", "resizeCornerWidth", 0, 0.5),
             ("setResizeCornerWidth", "resizeCornerWidth", 20, 6),
             ("setResizeCornerOpacity", "resizeCornerOpacity", 2, 1),
-            ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 3),
+            ("setResizeCornerWidth", "resizeCornerWidth", float("nan"), 5.1),
             ("setResizeCornerGap", "resizeCornerGap", -1, 0),
             ("setResizeCornerGap", "resizeCornerGap", 50, 10),
             ("setResizeCornerPadding", "resizeCornerPadding", 0, 0.1),
             ("setResizeCornerExclusion", "resizeCornerExclusion", -1, 0),
             ("setResizeCornerExclusion", "resizeCornerExclusion", 20, 5),
             ("setResizeCornerReach", "resizeCornerReach", 100, 50),
-            ("setResizeCornerPadding", "resizeCornerPadding", float("inf"), 1),
+            ("setResizeCornerPadding", "resizeCornerPadding", float("inf"), 2.4),
             ("setResizeCornerRoundness", "resizeCornerRoundness", -1, 0),
             ("setResizeCornerRoundness", "resizeCornerRoundness", 120, 100),
         ):
             getattr(self.b, setter)(value)
             self.assertEqual(getattr(self.b, prop), want)
         Path(fds.CONF_PATH).write_text("RESIZE_CORNER_STYLE=junk\nRESIZE_CORNER_WIDTH=nan\n")
-        self.assertEqual(self.b.resizeCornerStyle, "sharp")
-        self.assertEqual(self.b.resizeCornerWidth, 3)
+        self.assertEqual(self.b.resizeCornerStyle, "native")
+        self.assertEqual(self.b.resizeCornerWidth, 5.1)
 
     def test_resize_corner_preview_and_all_persistent_combinations(self):
         self.assertFalse(self.b.resizeCornerPreview)
-        self.assertEqual(self.b.resizeCornerAlways, [False] * 4)
+        self.assertEqual(self.b.resizeCornerAlways, [False, False, False, True])
         self.b.setResizeCornerPreview(True)
         self.assertTrue(self.b.resizeCornerPreview)
         self.assertEqual(self.asked[-1], "handsetting RESIZE_CORNER_PREVIEW 1")
@@ -211,8 +211,35 @@ class GrabBar(unittest.TestCase):
 
     def test_old_square_size_is_not_misread_as_shape_padding(self):
         Path(fds.CONF_PATH).write_text("RESIZE_CORNER_TARGET=50\n")
-        self.assertEqual(self.b.resizeCornerPadding, 1)
+        self.assertEqual(self.b.resizeCornerPadding, 2.4)
         self.assertEqual(self.b.resizeCornerExclusion, 0.5)
+
+    def test_legacy_selection_preserves_modern_preferences_and_haptics(self):
+        self.assertTrue(self.b.resizeCornerHaptics)
+        self.b.setResizeCornerWidth(4)
+        self.b.setResizeCornerPreview(True)
+        self.b.setResizeCornerAlways(0, True)
+        self.b.setResizeCornerStyle("glow")
+        self.assertEqual(self.b.resizeCornerStyle, "glow")
+        self.assertEqual(self.b.resizeCornerWidth, 4)
+        self.assertTrue(self.b.resizeCornerPreview)
+        self.assertEqual(self.b.resizeCornerAlways, [True, False, False, True])
+        self.b.setResizeCornerHaptics(False)
+        self.assertEqual(self.asked[-1], "handsetting RESIZE_CORNER_HAPTICS 0")
+        self.b.setResizeCornerStyle("native")
+        self.assertFalse(self.b.resizeCornerHaptics)
+        self.assertEqual(self.b.resizeCornerWidth, 4)
+        self.b.setResizeCornerHaptics(True)
+        self.assertEqual(self.asked[-1], "handsetting RESIZE_CORNER_HAPTICS 1")
+
+    def test_example_config_matches_new_resize_defaults(self):
+        props = ("resizeCornerStyle", "resizeCornerLength", "resizeCornerWidth", "resizeCornerOpacity",
+                 "resizeCornerGap", "resizeCornerPadding", "resizeCornerExclusion", "resizeCornerRoundness",
+                 "resizeCornerReach", "resizeCornerPreview", "resizeCornerAlways", "resizeCornerHaptics")
+        defaults = {prop: getattr(self.b, prop) for prop in props}
+        example = fds.ft_conf.read(str(Path(fds.HERE).parent / "session" / "frametop.conf.example"))
+        with patch.object(fds.ft_layout, "read_conf", return_value=example):
+            self.assertEqual({prop: getattr(self.b, prop) for prop in props}, defaults)
 
 
 if __name__ == "__main__":

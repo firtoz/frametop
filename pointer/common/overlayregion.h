@@ -11,6 +11,9 @@
 namespace overlayregion {
 struct Primitive { bool circle = false; double x = 0, y = 0, w = 0, h = 0; };
 using Region = std::vector<Primitive>;
+inline bool FullRectangle(const Region &region) {
+    return region.size() == 1 && !region[0].circle && region[0].x == 0 && region[0].y == 0 && region[0].w == 1 && region[0].h == 1;
+}
 // OpenVR's controller mask uses image-space top-left coordinates, unlike its
 // ray UVs and mouse events, whose Y runs bottom to top. Circle centers and
 // rectangle origins need different flips (a rectangle's height is included).

@@ -7,6 +7,9 @@ int main() {
     assert(overlayregion::Contains(region, 0.2, 0.25));
     assert(overlayregion::Contains(region, 0.7, 0.7));
     assert(!overlayregion::Contains(region, 0.2, 0.7));
+    assert(!overlayregion::FullRectangle(region));
+    assert(overlayregion::FullRectangle({{false, 0, 0, 1, 1}}));
+    assert(!overlayregion::FullRectangle({{true, 0.5, 0.5, 0.5, 0}}));
     overlayregion::Region image;
     for (const auto &p : region) image.push_back(overlayregion::TopLeft(p));
     assert(std::fabs(image[0].y - 0.7) < 1e-12); // rectangle origin includes its height

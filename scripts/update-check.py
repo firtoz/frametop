@@ -70,6 +70,8 @@ PACKAGES = {
                            "both arms and bend drag, window content and RESIZE_CORNER_EXCLUSION do not; "
                            "preview matches the region before/during hover growth on flat, curved and pinned panels "
                            "(SetOverlayIntersectionMask, mouse/UV coordinates); "
+                           "resize hover haptics buzz only the controller whose laser enters, never the other hand or 3D mouse; "
+                           "original soft-glow mode retains its old glow/proximity and square target; "
                            "Full Keyboard (keyboard/) opens for a desktop text field over the screens with "
                            "the dashboard closed, in the dashboard, and in place of Steam's own keyboard in a "
                            "Steam field, and its lasers, controller tips and fingertips press keys",

@@ -697,8 +697,8 @@ class Backend(QObject):
 
     @Property(str, notify=changed)
     def resizeCornerStyle(self):
-        value = ft_layout.read_conf().get("RESIZE_CORNER_STYLE", "sharp")
-        return value if value in ("sharp", "glow", "native") else "sharp"
+        value = ft_layout.read_conf().get("RESIZE_CORNER_STYLE", "native")
+        return value if value in ("sharp", "glow", "native") else "native"
 
     @Slot(str)
     def setResizeCornerStyle(self, style):
@@ -715,27 +715,27 @@ class Backend(QObject):
 
     @Property(float, notify=changed)
     def resizeCornerOpacity(self):
-        return self._barNumber("RESIZE_CORNER_OPACITY", 0.9, 0, 1)
+        return self._barNumber("RESIZE_CORNER_OPACITY", 0.27, 0, 1)
 
     @Slot(float)
     def setResizeCornerOpacity(self, opacity):
-        self._setBarNumber("RESIZE_CORNER_OPACITY", opacity, 0.9, 0, 1)
+        self._setBarNumber("RESIZE_CORNER_OPACITY", opacity, 0.27, 0, 1)
 
     @Property(float, notify=changed)
     def resizeCornerLength(self):
-        return self._barNumber("RESIZE_CORNER_LENGTH", 4, 1, 10)
+        return self._barNumber("RESIZE_CORNER_LENGTH", 4.7, 1, 10)
 
     @Slot(float)
     def setResizeCornerLength(self, cm):
-        self._setBarNumber("RESIZE_CORNER_LENGTH", cm, 4, 1, 10)
+        self._setBarNumber("RESIZE_CORNER_LENGTH", cm, 4.7, 1, 10)
 
     @Property(float, notify=changed)
     def resizeCornerWidth(self):
-        return self._barNumber("RESIZE_CORNER_WIDTH", 3, 0.5, 6)
+        return self._barNumber("RESIZE_CORNER_WIDTH", 5.1, 0.5, 6)
 
     @Slot(float)
     def setResizeCornerWidth(self, mm):
-        self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 3, 0.5, 6)
+        self._setBarNumber("RESIZE_CORNER_WIDTH", mm, 5.1, 0.5, 6)
 
     @Property(str, notify=changed)
     def resizeCornerHoverColor(self):
@@ -747,19 +747,19 @@ class Backend(QObject):
 
     @Property(float, notify=changed)
     def resizeCornerGap(self):
-        return self._barNumber("RESIZE_CORNER_GAP", 2, 0, 10)
+        return self._barNumber("RESIZE_CORNER_GAP", 3.1, 0, 10)
 
     @Slot(float)
     def setResizeCornerGap(self, cm):
-        self._setBarNumber("RESIZE_CORNER_GAP", cm, 2, 0, 10)
+        self._setBarNumber("RESIZE_CORNER_GAP", cm, 3.1, 0, 10)
 
     @Property(float, notify=changed)
     def resizeCornerPadding(self):
-        return self._barNumber("RESIZE_CORNER_PADDING", 1, 0.1, 10)
+        return self._barNumber("RESIZE_CORNER_PADDING", 2.4, 0.1, 10)
 
     @Slot(float)
     def setResizeCornerPadding(self, cm):
-        self._setBarNumber("RESIZE_CORNER_PADDING", cm, 1, 0.1, 10)
+        self._setBarNumber("RESIZE_CORNER_PADDING", cm, 2.4, 0.1, 10)
 
     @Property(float, notify=changed)
     def resizeCornerExclusion(self):
@@ -793,10 +793,18 @@ class Backend(QObject):
     def setResizeCornerPreview(self, on):
         self._setBar("RESIZE_CORNER_PREVIEW", "1" if on else "0")
 
+    @Property(bool, notify=changed)
+    def resizeCornerHaptics(self):
+        return ft_layout.read_conf().get("RESIZE_CORNER_HAPTICS", "1") == "1"
+
+    @Slot(bool)
+    def setResizeCornerHaptics(self, on):
+        self._setBar("RESIZE_CORNER_HAPTICS", "1" if on else "0")
+
     @Property("QVariantList", notify=changed)
     def resizeCornerAlways(self):
         conf = ft_layout.read_conf()
-        return [conf.get(f"RESIZE_CORNER_ALWAYS_{corner}", "0") == "1"
+        return [conf.get(f"RESIZE_CORNER_ALWAYS_{corner}", "1" if corner == "BR" else "0") == "1"
                 for corner in ("TL", "TR", "BL", "BR")]
 
     @Slot(int, bool)
