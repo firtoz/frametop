@@ -52,6 +52,8 @@ Only these two wearer-reviewed crops are published. The uncropped capture stays 
 
 Published independently as [PR #94](https://github.com/Frametop/frametop/pull/94), based directly on clean upstream `main`, without drag-zone, keyboard-focus or native-dashboard-routing changes. Clean contribution `32dff5c` passes a full ARM64 image build (`frametop:resize-controls-pr`, image `15d44fa9fe5e`), 33 relevant checkout Python tests, changed-file Ruff and available C/C++ checks (dependency-related hand/gaze skips as above).
 
+Personal integration `91cf7f1` also passes a full ARM64 image build (`frametop:firtoz-main`, image `b0a95d08177b`), 44 relevant checkout Python tests, changed-file Ruff and available C/C++ checks with the same dependency skips. Subsequent commits only update this log and contribution links. Publishing does not install the new move-bar haptics or restart headset services.
+
 The wearer tested the final defaults, shaped target, controller-mask correction and resize haptics and approved the result. The two exact native-size crops below are approved for publication; full captures remain private. See [Resize corners](resize-corners.md) for the current settings guide. The older installation notes below record development history, not outstanding wearer-review requests.
 
 Idle:
