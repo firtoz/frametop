@@ -10,7 +10,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | Configurable drag-zone padding, preview, styling and hover haptics | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
 | Crisp, configurable resize-corner feedback and hover haptics | [Frametop/frametop #94](https://github.com/Frametop/frametop/pull/94) |
 | Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
-| App-preserving Steam PIN access protection | Isolated `feat/steam-pin-lock`; upstream PR pending enforcement/headset validation |
+| App-preserving Steam PIN access protection | Isolated `feat/steam-pin-lock`; PR on hold for wearer validation and coordinated follow-up work |
 
 ## Controller-selected native windows get keyboard focus
 
@@ -96,6 +96,10 @@ Installed integrated commit `355089b` from the source checkout using its own bui
 The wearer then opened KWrite with unsaved text and completed another real Steam PIN lock/unlock cycle. They confirmed Frametop disappeared while locked, returned after unlock, and retained the unsaved text. KWrite, nested KWin and the compositor kept the same processes. This passes the basic visual/app-preservation check; input-blocking, auxiliary panels, timing, observer/UI failure, boot and suspend/resume still need hardware validation. No screenshots were taken. The separate upstream contribution will remain draft pending that matrix.
 
 The subsequent floating-window cycle exposed repeated PIN prompts in the initial active-recovery implementation. While locked, readbacks confirmed no Frametop overlays visible and all baseline processes alive; Full Keyboard was not visible before that test, so its concealment remains unvalidated. A monitored repeat showed a clean cycle but did not establish the earlier failure's exact cause. At the wearer's request, clean-branch fix `c3f50e4` (integrated as `c36f954`) removes all lock requests and adds fixed diagnostic reason codes. It passes 35 PIN tests and 78 targeted host-side tests, plus changed-file Ruff. With explicit approval, only the guard was restarted to load this revision. It correctly reported unknown/awaiting-observed-lock and hid every Frametop panel without creating a Steam PIN prompt. The wearer then used Steam's enabled PIN-on-wake flow by sleeping/waking with the headset power button and confirmed it worked. Logs showed unknown/observation-gap-or-suspend → locked → unlocked-after-observed-lock, and the original KWrite, KWin, compositor and keyboard processes remained alive. This validates passive recovery through that normal sleep/wake cycle; cold boot, prolonged suspend and other failure/input cases remain pending. No desktop/app restart was needed.
+
+A later passive cycle verified Full Keyboard and floating KWrite were visible beforehand, then all Frametop panels were hidden while denied. The wearer confirmed the desktop and floating window returned after unlock; Full Keyboard stayed dismissed, which the wearer accepted. Reopening and typing afterward has not yet been explicitly verified. Sequential gate/overlay queries are not an atomic latency measurement.
+
+**Publication hold:** the wearer asked to keep this work local so another agent can build VNC streaming on top before a PR is created. Do not push or create the PIN PR yet. Protected mode currently refuses remote capture/serving for the entire session; streaming follow-up must explicitly secure those independent outputs and inputs, not merely remove that restriction. Keep the clean contribution separate from fork-only customizations.
 
 ## Branch workflow
 
