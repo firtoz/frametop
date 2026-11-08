@@ -8,7 +8,7 @@ Follow each PR link for its current review/merge status; a submitted PR is not n
 | --- | --- |
 | Keyboard focus follows controller selection of native windows | [Frametop/frametop #87](https://github.com/Frametop/frametop/pull/87) |
 | Configurable drag-zone padding, preview, styling and hover haptics | [Frametop/frametop #92](https://github.com/Frametop/frametop/pull/92) |
-| Crisp, configurable resize-corner feedback | Local development; no upstream PR yet |
+| Crisp, configurable resize-corner feedback and hover haptics | [Frametop/frametop #94](https://github.com/Frametop/frametop/pull/94) |
 | Per-app native dashboard launch exceptions (Konsole) | Local development; no upstream PR yet |
 
 ## Controller-selected native windows get keyboard focus
@@ -49,6 +49,8 @@ Actual VR drag-zone preview, cropped from the headset view:
 Only these two wearer-reviewed crops are published. The uncropped capture stays in ignored local artifacts; screenshot review is required before publishing new captures, which may include private windows or room imagery.
 
 ## Crisp resize corners
+
+Published independently as [PR #94](https://github.com/Frametop/frametop/pull/94), based directly on clean upstream `main`, without drag-zone, keyboard-focus or native-dashboard-routing changes. Clean contribution `32dff5c` passes a full ARM64 image build (`frametop:resize-controls-pr`, image `15d44fa9fe5e`), 33 relevant checkout Python tests, changed-file Ruff and available C/C++ checks (dependency-related hand/gaze skips as above).
 
 The wearer tested the final defaults, shaped target, controller-mask correction and resize haptics and approved the result. The two exact native-size crops below are approved for publication; full captures remain private. See [Resize corners](resize-corners.md) for the current settings guide. The older installation notes below record development history, not outstanding wearer-review requests.
 
